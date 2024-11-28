@@ -26,10 +26,18 @@ class Variable(OverridableYamlObject):
     """
     This class represents a CI/CD variable.
     """
-    def __init__(self, default_value: str = "", description=None, options: None | list[str] = None, yaml_override:dict | None = None):
+    def __init__(self, default_value: str = "", description=None, options: None | list[str] = None, yaml_override:dict | None = None, show=False):
+        """
+        :param default_value:
+        :param description: see Gitlab-CI YAML
+        :param options: see Gitlab-CI YAML
+        :param yaml_override: override keys in final YAML
+        :param show: if true print the value of the variable before running a job
+        """
         super().__init__(yaml_override)
         self.name = None # name is set from variable store
         self.default_value = default_value
+        self.show = show
         self.value = default_value
         self.description = description
         self.options = options

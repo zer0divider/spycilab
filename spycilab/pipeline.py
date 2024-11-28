@@ -166,16 +166,25 @@ class Pipeline(OverridableYamlObject):
                             break
 
                 if mode != When.never:
-                    print(f"  - {j.name} ({mode})")
+                    print(f"  - {j.name} ({j.internal_name}): {mode}")
 
     def run(self, job: str):
+        # show all variables that want to be shown
+        print(f"CI Variables :")
+        for v in self.vars.all():
+            if v.show:
+                print(f"  {v.name}: '{v.value}'")
+        print("  ... (some may be hidden)\n")
+
         j = self.jobs.get(job)
         if j is None:
             print(f"job '{job}' does not exist", file=sys.stderr)
             exit(1)
         else:
             # set specific built-in env variables
-            self.vars.CI_JOB_NAME.value = j.name
+            if not self.vars.CI_JOB_NAME.value:
+                self.vars.CI_JOB_NAME.value = j.name
+            print(f"# Starting job '{j.name}' ({j.internal_name})\n")
             j.run()
 
     def to_yaml_impl(self):
@@ -186,7 +195,12 @@ class Pipeline(OverridableYamlObject):
         p = {}
         # workflow
         if self.workflow is not None:
-            p["workflow"] = {"rules": [r.to_yaml(is_workflow=True) for r in self.workflow]}
+            rules = []
+            for r in self.workflow:
+                if r.allow_failure is not None:
+                    raise RuntimeError("'allow_failure' should not be set for a workflow rule")
+                rules.append = r.to_yaml()
+            p["workflow"] = {"rules": rules}
 
         # variables
         if len(vars_yaml) > 0:

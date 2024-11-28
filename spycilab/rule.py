@@ -26,15 +26,13 @@ class Rule(OverridableYamlObject):
         else:
             return self.condition.eval()
 
-    def to_yaml_impl(self, is_workflow: bool = False) -> dict:
+    def to_yaml_impl(self) -> dict:
         y = {}
         if self.condition is not None:
             y["if"] = self.condition.to_yaml()
         if self.when is not None:
             y["when"] = str(self.when)
         if self.allow_failure is not None:
-            if is_workflow:
-                raise RuntimeError("'allow_failure' is not allowed in workflow")
             y["allow_failure"] = self.allow_failure
         if not y:
             raise RuntimeError("Either a condition or 'when' has to be specified.")
