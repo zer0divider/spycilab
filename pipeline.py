@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from spycilab import *
 from subprocess import run
+import sys
 
 stages = StageStore()
 stages.test = Stage("Testing")
@@ -12,7 +13,7 @@ pytest_result = Artifacts(["pyunit.xml"], when=When.always)
 # unit tests with pytest
 def run_pytest():
     r = run(["python3", "-m", "pytest", "--junitxml", pytest_result.paths[0]])
-    print("done", flush=True)
+    print("", file=sys.stderr, flush=True)
     exit(r.returncode)
 
 jobs = JobStore()
