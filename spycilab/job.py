@@ -141,6 +141,9 @@ class Job(OverridableYamlObject):
                 if n.produced_by is None:
                     raise RuntimeError(f"Artifact '{self.config.artifacts.paths}' is not produced by any job")
 
+    def __gt__(self, other) -> bool:
+        return self.name > other.name
+
     def run(self):
         if self.config.work is not None:
             self.config.work()

@@ -78,7 +78,10 @@ class Pipeline(OverridableYamlObject):
         if self.workflow is not None:
             self.pipeline_enabled = False
             for r in self.workflow:
-                if r.condition.eval():
+                eval_result = True
+                if r.condition is not None:
+                    eval_result = r.condition.eval()
+                if eval_result:
                     match r.when:
                         case When.never:
                             self.pipeline_enabled = False
@@ -154,7 +157,8 @@ class Pipeline(OverridableYamlObject):
         for j in self.jobs.all():
             jobs_by_stage[j.config.stage.name].append(j)
         for s in self.stages.all():
-            jbs = jobs_by_stage[s.name]
+            jbs = jobs_by_stage[s.name].copy()
+            jbs.sort()
             print(f"{s.name}: ({len(jbs)})")
             for j in jbs:
                 mode = When.always
@@ -199,7 +203,7 @@ class Pipeline(OverridableYamlObject):
             for r in self.workflow:
                 if r.allow_failure is not None:
                     raise RuntimeError("'allow_failure' should not be set for a workflow rule")
-                rules.append = r.to_yaml()
+                rules.append(r.to_yaml())
             p["workflow"] = {"rules": rules}
 
         # variables
