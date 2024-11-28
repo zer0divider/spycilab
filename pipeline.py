@@ -15,6 +15,7 @@ def run_pytest():
     r = run(["python3", "-m", "pytest", "--junitxml", pytest_result.paths[0]])
     return r.returncode
 
+
 jobs = JobStore()
 
 jobs.unit_tests = Job("Unit Tests", JobConfig(stage=stages.test, work=run_pytest, artifacts=pytest_result))

@@ -21,7 +21,7 @@ class JobConfig:
     """
 
     def __init__(self, stage: Stage = None,
-                 work: typing.Callable | None = None,
+                 work: typing.Callable[[], bool | int] | None = None,
                  rules: None | list[Rule] | Rule = None,
                  artifacts: None | Artifacts = None,
                  needs: None | list[Artifacts] | Artifacts = None,

@@ -15,9 +15,11 @@ J = JobStore()
 
 def work_build_app():
     print("building my app...")
+    return True
     
 def work_test_app():
     print("testing my app...")
+    return True
     
 J.build_app = Job("Build My App", JobConfig(stage=S.build, work=work_build_app))
 J.test_app = Job("Test My App", JobConfig(stage=S.test, work=work_test_app))
