@@ -12,7 +12,7 @@ pytest_result = Artifacts(["pyunit.xml"], when=When.always)
 
 # unit tests with pytest
 def run_pytest():
-    r = run(["python3", "-m", "pytest", "--junitxml", pytest_result.paths[0]])
+    r = run(["python3", "-m", "pytes", "--junitxml", pytest_result.paths[0]], check=True)
     return r.returncode
 
 jobs = JobStore()
