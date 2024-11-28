@@ -24,6 +24,12 @@ Other comparision functions are:
 - `Condition.full_match(var, pattern)` variable fully matches a given regular expression
   - this one has two additional options `examples_match` and `examples_not_match` as sanity-check for which you can pass a bunch of values that are expected to match/not match
 
+Use the overloaded `&` and `|` operator to combine two conditions with a logical *and* / *or*.
+```python
+Condition.equal(variables.var_a, "hello") & Condition.equal(variables.var_b, "bye") # if: $var_a == 'hello' && $var_b == 'bye'
+Condition.is_set(variables.var_a) | Condition.is_true(variables.var_c) # if: $var_a || $var_b == 'yes'
+```
+
 ## Conditions from Variable
 Instead of using `Condition.equal()` (or similar) the `Variable` class has functions to build a `Condition` object directly:
 ```python
@@ -33,7 +39,7 @@ variables.CI_COMMIT_BRANCH.equal_to("test-branch")
 ## Built-in Conditions
 In the `VariableStore` class you can find some useful condition creator functions:
 ```python
-variables.pipeline_source_is(source) # e.g. PipelineSource.push
+variables.pipeline_source_is(source) # e.g. with source=PipelineSource.push
 variables.branch_is_default() # CI_COMMIT_BRANCH == CI_DEFAULT_BRANCH
 # ...
 ```
