@@ -8,11 +8,11 @@ stages.test = Stage("Testing")
 
 variables = VariableStore()
 
-pytest_result = Artifacts(["pyunit.xml"], when=When.always)
+pytest_result = Artifacts(when=When.always, junit_report="pyunit.xml")
 
 # unit tests with pytest
 def run_pytest():
-    r = run(["python3", "-m", "pytest", "--junitxml", pytest_result.paths[0]])
+    r = run(["python3", "-m", "pytest", "--junitxml", pytest_result.junit_report])
     return r.returncode
 
 

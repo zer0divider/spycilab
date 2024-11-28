@@ -26,6 +26,6 @@ Unit Tests:
   variables:
     INTERNAL_JOB_NAME: unit_tests
   artifacts:
-    paths:
-    - pyunit.xml
+    reports:
+      junit: pyunit.xml
     when: always
