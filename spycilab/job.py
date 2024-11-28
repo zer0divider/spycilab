@@ -146,9 +146,10 @@ class Job(OverridableYamlObject):
 
     def run(self):
         if self.config.work is not None:
-            self.config.work()
+            return self.config.work()
         else:
             print("Nothing to do.")
+            return 0
 
     def to_yaml_impl(self):
         if self.internal_name is None:

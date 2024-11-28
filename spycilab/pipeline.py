@@ -189,7 +189,15 @@ class Pipeline(OverridableYamlObject):
             if not self.vars.CI_JOB_NAME.value:
                 self.vars.CI_JOB_NAME.value = j.name
             print(f"# Starting job '{j.name}' ({j.internal_name})\n")
-            j.run()
+            r = j.run()
+            print(f"# Job finished.", flush=True)
+            if isinstance(r, int):
+                exit(r)
+            elif isinstance(r, bool):
+                exit(0 if r else 1)
+            else:
+                print(f"Warning: Job '{j.internal_name}' did not return bool or integer.")
+                exit(0)
 
     def to_yaml_impl(self):
         var_args = []
