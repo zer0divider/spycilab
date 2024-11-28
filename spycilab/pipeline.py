@@ -188,7 +188,7 @@ class Pipeline(OverridableYamlObject):
             # set specific built-in env variables
             if not self.vars.CI_JOB_NAME.value:
                 self.vars.CI_JOB_NAME.value = j.name
-            print(f"# Starting job '{j.name}' ({j.internal_name})\n")
+            print(f"# Starting job '{j.name}' ({j.internal_name})\n", flush=True)
             r = j.run()
             print(f"# Job finished.", flush=True)
             if isinstance(r, int):
