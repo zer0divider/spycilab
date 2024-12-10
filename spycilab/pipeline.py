@@ -199,7 +199,7 @@ class Pipeline(OverridableYamlObject):
             for r in self.workflow:
                 if r.allow_failure is not None:
                     raise RuntimeError("'allow_failure' should not be set for a workflow rule")
-                rules.append = r.to_yaml()
+                rules.append(r.to_yaml())
             p["workflow"] = {"rules": rules}
 
         # variables
