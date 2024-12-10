@@ -132,11 +132,10 @@ class Pipeline(OverridableYamlObject):
 
         self.check_workflow()
 
-        if not self.pipeline_enabled:
-            print("** Pipeline disabled by workflow rules **\n")
-
         match args.command:
             case "list":
+                if not self.pipeline_enabled:
+                    print("** Pipeline disabled by workflow rules **\n")
                 self.list()
             case "generate":
                 if args.output:
