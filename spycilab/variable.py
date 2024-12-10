@@ -336,7 +336,7 @@ class VariableStore(TypedStore):
         return Condition.equal(self.CI_COMMIT_BRANCH, self.CI_DEFAULT_BRANCH)
 
     def is_merge_request(self) -> Condition:
-        return self.CI_MERGE_REQUEST_ID.is_set()
+        return self.pipeline_source_is(PipelineSource.merge_request_event)
 
     def is_tag(self) -> Condition:
         return self.CI_COMMIT_TAG.is_set()
