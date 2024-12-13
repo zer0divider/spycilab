@@ -82,7 +82,7 @@ class Pipeline(OverridableYamlObject):
                     match r.when:
                         case When.never:
                             self.pipeline_enabled = False
-                        case When.always:
+                        case None | When.always:
                             self.pipeline_enabled = True
                         case _:
                             raise RuntimeError(f"invalid 'when'-type for pipeline workflow '{r.when}'")
