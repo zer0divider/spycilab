@@ -190,10 +190,10 @@ class Pipeline(OverridableYamlObject):
             print(f"# Starting job '{j.name}' ({j.internal_name})\n", flush=True)
             r = j.run()
             print(f"# Job finished.", flush=True)
-            if isinstance(r, int):
-                return r
-            elif isinstance(r, bool):
+            if isinstance(r, bool): # important to check bool first, because 'bool' is a subclass of 'int' (https://peps.python.org/pep-0285/)
                 return 0 if r else 1
+            elif isinstance(r, int):
+                return r
             else:
                 print(f"Warning: Job '{j.internal_name}' did not return bool or integer.", file=sys.stderr)
                 return 0
