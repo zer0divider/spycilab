@@ -21,7 +21,7 @@ class JobConfig:
     """
 
     def __init__(self, stage: Stage = None,
-                 work: typing.Callable | None = None,
+                 work: typing.Callable[[], bool | int] | None = None,
                  rules: None | list[Rule] | Rule = None,
                  artifacts: None | Artifacts = None,
                  needs: None | list[Artifacts] | Artifacts = None,
@@ -141,11 +141,15 @@ class Job(OverridableYamlObject):
                 if n.produced_by is None:
                     raise RuntimeError(f"Artifact '{self.config.artifacts.paths}' is not produced by any job")
 
+    def __gt__(self, other) -> bool:
+        return self.name > other.name
+
     def run(self):
         if self.config.work is not None:
-            self.config.work()
+            return self.config.work()
         else:
             print("Nothing to do.")
+            return 0
 
     def to_yaml_impl(self):
         if self.internal_name is None:

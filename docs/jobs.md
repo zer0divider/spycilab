@@ -25,6 +25,7 @@ Statically added jobs can also be retrieved dynamically.
 
 ## Work
 In *spycilab* the stuff a job does is called `work` (defined through the `JobConfig`).
+The callable should return an error code (integer) or a boolean indicating whether the job was successful.
 It is simply a callable object (e.g. a function) that is called when the job runs.
 Here are some examples:
 ```python
@@ -36,7 +37,7 @@ jobs.my_job = Job("My Job", JobConfig(work=my_job_work))
 
 # work with lambda
 jobs.my_other_job = Job("My Job", JobConfig(
-    work=lambda: print("Do other stuff...")
+    work=lambda: return my_func()
 ))
 ```
 The work can also be defined after the job instantiation through the `job_work` decorator.
@@ -46,6 +47,7 @@ jobs.my_job = Job("My Job", JobConfig())
 @job_work(jobs.my_job)
 def my_job_work():
     print("Do other stuff...")
+    return True
 ```
 
 ## Dependencies

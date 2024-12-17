@@ -78,7 +78,10 @@ class Pipeline(OverridableYamlObject):
         if self.workflow is not None:
             self.pipeline_enabled = False
             for r in self.workflow:
-                if r.condition.eval():
+                eval_result = True
+                if r.condition is not None:
+                    eval_result = r.condition.eval()
+                if eval_result:
                     match r.when:
                         case When.never:
                             self.pipeline_enabled = False
@@ -142,7 +145,7 @@ class Pipeline(OverridableYamlObject):
                     self.output = args.output
                 self.write_output()
             case "run":
-                self.run(args.job)
+                exit(self.run(args.job))
             case _:
                 arg_parser.print_help()
 
@@ -153,7 +156,8 @@ class Pipeline(OverridableYamlObject):
         for j in self.jobs.all():
             jobs_by_stage[j.config.stage.name].append(j)
         for s in self.stages.all():
-            jbs = jobs_by_stage[s.name]
+            jbs = jobs_by_stage[s.name].copy()
+            jbs.sort()
             print(f"{s.name}: ({len(jbs)})")
             for j in jbs:
                 mode = When.always
@@ -167,7 +171,7 @@ class Pipeline(OverridableYamlObject):
                 if mode != When.never:
                     print(f"  - {j.name} ({j.internal_name}): {mode}")
 
-    def run(self, job: str):
+    def run(self, job: str) -> int:
         # show all variables that want to be shown
         print(f"CI Variables :")
         for v in self.vars.all():
@@ -178,13 +182,21 @@ class Pipeline(OverridableYamlObject):
         j = self.jobs.get(job)
         if j is None:
             print(f"job '{job}' does not exist", file=sys.stderr)
-            exit(1)
+            return 1
         else:
             # set specific built-in env variables
             if not self.vars.CI_JOB_NAME.value:
                 self.vars.CI_JOB_NAME.value = j.name
-            print(f"# Starting job '{j.name}' ({j.internal_name})\n")
-            j.run()
+            print(f"# Starting job '{j.name}' ({j.internal_name})\n", flush=True)
+            r = j.run()
+            print(f"# Job finished.", flush=True)
+            if isinstance(r, int):
+                return r
+            elif isinstance(r, bool):
+                return 0 if r else 1
+            else:
+                print(f"Warning: Job '{j.internal_name}' did not return bool or integer.", file=sys.stderr)
+                return 0
 
     def to_yaml_impl(self):
         var_args = []
