@@ -197,7 +197,7 @@ class JobStore(TypedStore[Job]):
 
 
 def job_work(job:Job):
-    def decorator(func:typing.Callable):
+    def decorator(func:typing.Callable[[], bool | int]):
         job.config.work = func
         return func
 
