@@ -24,8 +24,7 @@ class JobConfig:
                  work: typing.Callable[[], bool | int] | None = None,
                  rules: None | list[Rule] | Rule = None,
                  artifacts: None | Artifacts = None,
-                 needs: None | list[Artifacts] | Artifacts = None,
-                 depends: None | list[Job] | Job = None,
+                 needs: None | list[Artifacts | Job] | Artifacts | Job = None,
                  tags: None | list[str] | str = None,
                  run_prefix: str | None = None,
                  extends: list[JobConfig] | JobConfig | None = None,
@@ -51,7 +50,6 @@ class JobConfig:
         self.artifacts = artifacts
         self.needs = make_list(needs)
         self.tags = make_list(tags)
-        self.depends = make_list(depends)
         self.run_prefix = run_prefix
         self.when = when
         self.allow_failure = allow_failure
@@ -101,12 +99,12 @@ class JobConfig:
         j.artifacts = self.artifacts
         j.needs = self.needs.copy()
         j.tags = self.tags.copy()
-        j.depends = self.depends.copy()
         j.run_prefix = self.run_prefix
         j.when = self.when
         j.allow_failure = self.allow_failure
         j.yaml_override = self.yaml_override.copy()
         return j
+
 
 class Job(OverridableYamlObject):
     """
@@ -122,10 +120,6 @@ class Job(OverridableYamlObject):
         self.name = name
         self.config = config
 
-        # check deps and needs
-        if self.config.needs is not None and self.config.depends is not None:
-            raise RuntimeError(f"'needs' and 'depends' specified for job '{name}'")
-
         # check artifacts
         if self.config.artifacts is not None:
             if self.config.artifacts.produced_by is None:
@@ -137,9 +131,10 @@ class Job(OverridableYamlObject):
         # append this job to artifact needed list
         if self.config.needs is not None:
             for n in self.config.needs:
-                n.needed_by.append(self)
-                if n.produced_by is None:
-                    raise RuntimeError(f"Artifact '{self.config.artifacts.paths}' is not produced by any job")
+                if isinstance(n, Artifacts):
+                    n.needed_by.append(self)
+                    if n.produced_by is None:
+                        raise RuntimeError(f"Artifact '{self.config.artifacts.paths}' is not produced by any job")
 
     def __gt__(self, other) -> bool:
         return self.name > other.name
@@ -172,10 +167,14 @@ class Job(OverridableYamlObject):
         if self.config.artifacts is not None:
             y["artifacts"] = self.config.artifacts.to_yaml()
         if self.config.needs is not None:
-            y["needs"] = [n.produced_by.name for n in self.config.needs]
-        if self.config.depends is not None:
-            y["dependencies"] = [n.name for n in self.config.depends]
-            # TODO: warn when job has other rules than dependend job
+            y["needs"] = []
+            for n in self.config.needs:
+                if isinstance(n, Artifacts):
+                    y["needs"].append(n.produced_by.name)
+                elif isinstance(n, Job):
+                    y["needs"].append({"job": n.name, "artifacts": False})
+                else:
+                    raise RuntimeError(f"Job '{n.name}': Invalid type for need '{type(n)}'")
         if self.config.tags is not None:
             y["tags"] = self.config.tags
         if self.config.when is not None:

@@ -50,33 +50,32 @@ def my_job_work():
     return True
 ```
 
-## Dependencies
-The `depends` keyword in the `JobConfig` (in GitLab-CI this is called `dependencies`) defines which jobs have to be run before.
-Note that GitLab requires the dependent jobs to be in an earlier stage.
-It is a list of `Job` objects.
-```python
-jobs.first = Job("This Job runs first", JobConfig())
-jobs.second = Job("This Job depends on first", JobConfig(depends=[jobs.first]))
-```
-
 ## Needs
-The `needs` keyword in *spycilab* is a little bit different from the native GitLab-CI yaml `needs` as it expects a list of artifacts (not jobs).
-The actual job that produces the artifact is automatically referenced when the yaml is generated.
+The `needs` keyword in *spycilab* is a little bit different from the native GitLab-CI yaml `needs` as it expects a list of artifacts or jobs.
+The actual job that produces the artifact is automatically referenced when artifacts are specified.
+If a job is specified in `needs` no artifacts are downloaded (`artifacts: false`).
 ```python
 file = Artifacts(paths=["file.txt"], when=When.always)
-jobs.producer_job = Job("Producer", JobConfig(artifacts=file))
-jobs.consumer_job = Job("Consumer", JobConfig(needs=[file]))
+jobs.producer1_job = Job("Producer1", JobConfig(artifacts=file, ...))
+jobs.producer2_job = Job("Producer2", JobConfig(...))
+jobs.consumer_job = Job("Consumer", JobConfig(needs=[file, jobs.producer2_job], ...))
 ```
 generates
 ```yaml
-Producer:
+Producer1:
   artifacts:
     paths: ["file.txt"]
     when: always
   ...
+  
+Producer2:
+  ...
 
 Consumer:
-  needs: [ "Producer" ]
+  needs:
+  - "Producer1"
+  - job: "Producer2"
+    artifacts: false
   ...
     
 ```

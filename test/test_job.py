@@ -21,12 +21,13 @@ def test_complex_job():
     in_artifact = Artifacts(["in.txt"])
     dep_j = Job("first", JobConfig(stage=s, artifacts=in_artifact))
     out_artifact = Artifacts(["out.txt"], when=When.on_success)
+    dep2_j = Job("second", JobConfig(stage=s))
     j = Job("my job",
             JobConfig(stage=s,
             work=None,
             rules=[Rule(v.equal_to("test"), when=When.always, allow_failure=True, yaml_override={"changes": None})],
             artifacts=out_artifact,
-            needs=[in_artifact],
+            needs=[in_artifact, dep2_j],
             tags=["my_tag"],
             run_prefix="PREFIX",
             yaml_override={"additional_keyword": ["test1", "test2"]}))
@@ -37,7 +38,7 @@ def test_complex_job():
     assert len(j_yaml["rules"]) == 1
     assert j_yaml["rules"][0] == {"if": "($var == 'test')", "when": "always", "allow_failure": True, "changes": None}
     assert j_yaml["artifacts"] == {"paths": ["out.txt"], "when": "on_success"}
-    assert j_yaml["needs"] == [ "first" ]
+    assert j_yaml["needs"] == [ "first", { "job": "second", "artifacts": False} ]
     assert j_yaml["tags"] == [ "my_tag" ]
     assert len(j_yaml["variables"]) == 2
     assert j_yaml["variables"]["JOB_RUN_PREFIX"] == "PREFIX"
