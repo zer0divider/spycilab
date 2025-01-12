@@ -50,7 +50,7 @@ class Variable(OverridableYamlObject):
             raise RuntimeError("usage of variable before name was given")
 
     def __str__(self) -> str:
-        return self.name
+        return self.value
 
     def equal_to(self, other: str | Variable) -> Condition:
         return Condition.equal(self, other)
@@ -219,6 +219,9 @@ class Condition:
         c.b = b
         c.t = Condition.Type.OR
         return c
+
+    def __or__(self, other) -> Condition:
+        return Condition.b_or(self, other)
 
     def eval(self) -> bool:
         if self.t is None:

@@ -40,7 +40,7 @@ def test_variable():
     assert v.name is None
     v.name = "v"
     assert v.value == "A"
-    assert str(v) == "v"
+    assert str(v) == "A"
     assert v.value == v.default_value
     assert v.options == ["A", "B"]
 

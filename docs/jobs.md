@@ -52,6 +52,7 @@ def my_job_work():
 
 ## Dependencies
 The `depends` keyword in the `JobConfig` (in GitLab-CI this is called `dependencies`) defines which jobs have to be run before.
+Note that GitLab requires the dependent jobs to be in an earlier stage.
 It is a list of `Job` objects.
 ```python
 jobs.first = Job("This Job runs first", JobConfig())
@@ -96,7 +97,7 @@ My Job:
 ```
 You can also extend a job configuration by deriving the `Job` class.
 This way you can perform operations not possible by the simple `extend` keyword.
-For example **adding** a specific tag (`extends` would only allow you to set all tags, not to add one to the list of tags defined by the deriving job):
+For example **adding** a specific tag (`extends` would only allow you to set all tags, not to add one to the list of tags defined by the derived job):
 ```python
 # always adds 'my_tag' to tags
 class MyTagJob(Job):

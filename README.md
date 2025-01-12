@@ -47,7 +47,7 @@ Test My App:
     INTERNAL_JOB_NAME: test_app
 ```
 
-## Commandline Arguments
+## Basic Commandline Arguments
 - ```./pipeline.py generate``` to generate `.gitlab-ci.yml`
 - ```./pipeline.py list``` to show all stages with their jobs
 - ```./pipeline.py run <JOB>``` to run a job (`<JOB>` is the internal job name, e.g. `build_app` in the above example)

@@ -124,28 +124,29 @@ class Pipeline(OverridableYamlObject):
         list_arg_parser = sub_parsers.add_parser("list", description="List all pipeline jobs")
         self.add_variable_argument(list_arg_parser)
         list_arg_parser.set_defaults(command="list")
-        args = arg_parser.parse_args(cmd_args)
+        list_arg_parser.add_argument("--all", action="store_true", help="Show all jobs, even ones disabled by rules.")
+        self.args = arg_parser.parse_args(cmd_args)
 
         self.load_config()
 
         self.check_jobs()
 
-        if args.__dict__.get("v"):
-            self.check_variables(args.v)
+        if self.args.__dict__.get("v"):
+            self.check_variables(self.args.v)
 
         self.check_workflow()
 
-        match args.command:
+        match self.args.command:
             case "list":
                 if not self.pipeline_enabled:
                     print("** Pipeline disabled by workflow rules **\n")
                 self.list()
             case "generate":
-                if args.output:
-                    self.output = args.output
+                if self.args.output:
+                    self.output = self.args.output
                 self.write_output()
             case "run":
-                exit(self.run(args.job))
+                exit(self.run(self.args.job))
             case _:
                 arg_parser.print_help()
 
@@ -158,7 +159,7 @@ class Pipeline(OverridableYamlObject):
         for s in self.stages.all():
             jbs = jobs_by_stage[s.name].copy()
             jbs.sort()
-            print(f"{s.name}: ({len(jbs)})")
+            print(f"{s.name}:")
             for j in jbs:
                 mode = When.always
                 if j.config.rules:
@@ -168,7 +169,7 @@ class Pipeline(OverridableYamlObject):
                             mode = r.when
                             break
 
-                if mode != When.never:
+                if self.args.all or mode != When.never:
                     print(f"  - {j.name} ({j.internal_name}): {mode}")
 
     def run(self, job: str) -> int:
@@ -188,15 +189,21 @@ class Pipeline(OverridableYamlObject):
             if not self.vars.CI_JOB_NAME.value:
                 self.vars.CI_JOB_NAME.value = j.name
             print(f"# Starting job '{j.name}' ({j.internal_name})\n", flush=True)
-            r = j.run()
-            print(f"# Job finished.", flush=True)
-            if isinstance(r, bool): # important to check bool first, because 'bool' is a subclass of 'int' (https://peps.python.org/pep-0285/)
-                return 0 if r else 1
-            elif isinstance(r, int):
-                return r
+            job_result = j.run()
+            if isinstance(job_result, bool): # important to check bool first, because 'bool' is a subclass of 'int' (https://peps.python.org/pep-0285/)
+                ret = 0 if job_result else 1
+            elif isinstance(job_result, int):
+                ret = job_result
             else:
                 print(f"Warning: Job '{j.internal_name}' did not return bool or integer.", file=sys.stderr)
-                return 0
+                ret = 0
+
+            if ret == 0:
+                print(f"# Job finished successfully.", flush=True)
+            else:
+                print(f"# Job FAILED.", flush=True)
+
+            return ret
 
     def to_yaml_impl(self):
         var_args = []
