@@ -10,6 +10,7 @@ variables = VariableStore()
 
 pytest_result = Artifacts(when=When.always, junit_report="pyunit.xml")
 
+
 # unit tests with pytest
 def run_pytest():
     r = run(["python3", "-m", "pytest", "--junitxml", pytest_result.junit_report])

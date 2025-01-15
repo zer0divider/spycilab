@@ -6,8 +6,9 @@
 from .typed_store import TypedStore
 
 class Stage:
-    def __init__(self, name:str):
+    def __init__(self, name:str, preserve_order:bool = False):
         self.name = name
+        self.preserve_order = preserve_order
 
     def to_yaml(self):
         return self.name

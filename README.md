@@ -56,6 +56,7 @@ Test My App:
 ## Documentation
 See [docs](./docs):
 - [Jobs](./docs/jobs.md)
+- [Stages](./docs/stages.md)
 - [Variables](./docs/variables.md)
 - [Rules & Conditions](./docs/rules.md)
 - [Configuration File](./docs/config.md)
