@@ -20,7 +20,7 @@ stages:
     -v CI_COMMIT_MESSAGE="${CI_COMMIT_MESSAGE}" -v CI_COMMIT_REF_NAME="${CI_COMMIT_REF_NAME}"
     -v CI_COMMIT_SHA="${CI_COMMIT_SHA}" -v CI_COMMIT_TAG="${CI_COMMIT_TAG}" -v CI_JOB_NAME="${CI_JOB_NAME}"
     -v CI_JOB_TOKEN="${CI_JOB_TOKEN}"
-Unit Tests:
+"\u200BUnit Tests":
   stage: Testing
   extends: .job_base
   variables:
@@ -29,23 +29,28 @@ Unit Tests:
     reports:
       junit: pyunit.xml
     when: always
-"\u200BZ":
+"\u200B\u200BZ":
   stage: Testing
   extends: .job_base
   variables:
     INTERNAL_JOB_NAME: z
-"\u200B\u200B\u200BX":
+"\u200B\u200B\u200BY":
   stage: Testing
   extends: .job_base
   variables:
     INTERNAL_JOB_NAME: y
-a:
+"\u200B\u200B\u200B\u200BX":
   stage: Testing
   extends: .job_base
   variables:
-    INTERNAL_JOB_NAME: a
-aa:
+    INTERNAL_JOB_NAME: x
+"\u200B\u200B\u200B\u200B\u200Baa":
   stage: Testing
   extends: .job_base
   variables:
     INTERNAL_JOB_NAME: aa
+"\u200B\u200B\u200B\u200B\u200B\u200Ba":
+  stage: Testing
+  extends: .job_base
+  variables:
+    INTERNAL_JOB_NAME: a
