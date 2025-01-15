@@ -34,8 +34,18 @@ Unit Tests:
   extends: .job_base
   variables:
     INTERNAL_JOB_NAME: z
-Y:
+"\u200B\u200BY":
   stage: Testing
   extends: .job_base
   variables:
     INTERNAL_JOB_NAME: y
+a:
+  stage: Testing
+  extends: .job_base
+  variables:
+    INTERNAL_JOB_NAME: a
+aa:
+  stage: Testing
+  extends: .job_base
+  variables:
+    INTERNAL_JOB_NAME: aa
