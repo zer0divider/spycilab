@@ -22,6 +22,7 @@ jobs.unit_tests = Job("Unit Tests", JobConfig(stage=stages.test, work=run_pytest
 
 jobs.z = Job("​Z", JobConfig(stage=stages.test))
 jobs.y = Job("​​Y", JobConfig(stage=stages.test))
+jobs.y = Job("​​​X", JobConfig(stage=stages.test))
 jobs.a = Job("a", JobConfig(stage=stages.test))
 jobs.aa = Job("aa", JobConfig(stage=stages.test))
 
