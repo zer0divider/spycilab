@@ -29,3 +29,13 @@ Unit Tests:
     reports:
       junit: pyunit.xml
     when: always
+Z:
+  stage: Testing
+  extends: .job_base
+  variables:
+    INTERNAL_JOB_NAME: z
+Y:
+  stage: Testing
+  extends: .job_base
+  variables:
+    INTERNAL_JOB_NAME: y
