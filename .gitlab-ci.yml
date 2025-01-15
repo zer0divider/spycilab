@@ -29,7 +29,7 @@ Unit Tests:
     reports:
       junit: pyunit.xml
     when: always
-Z:
+"\u200BZ":
   stage: Testing
   extends: .job_base
   variables:
