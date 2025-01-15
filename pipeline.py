@@ -20,7 +20,7 @@ jobs = JobStore()
 
 jobs.unit_tests = Job("Unit Tests", JobConfig(stage=stages.test, work=run_pytest, artifacts=pytest_result))
 
-jobs.z = Job("Z", JobConfig(stage=stages.test))
+jobs.z = Job("​Z", JobConfig(stage=stages.test))
 jobs.y = Job("Y", JobConfig(stage=stages.test))
 
 workflow = [
