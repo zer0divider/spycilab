@@ -4,11 +4,12 @@ from subprocess import run
 import sys
 
 stages = StageStore()
-stages.test = Stage("Testing", True)
+stages.test = Stage("Testing")
 
 variables = VariableStore()
 
 pytest_result = Artifacts(when=When.always, junit_report="pyunit.xml")
+
 
 # unit tests with pytest
 def run_pytest():
@@ -19,12 +20,6 @@ def run_pytest():
 jobs = JobStore()
 
 jobs.unit_tests = Job("Unit Tests", JobConfig(stage=stages.test, work=run_pytest, artifacts=pytest_result))
-
-jobs.z = Job("Z", JobConfig(stage=stages.test))
-jobs.y = Job("Y", JobConfig(stage=stages.test))
-jobs.x = Job("X", JobConfig(stage=stages.test))
-jobs.aa = Job("aa", JobConfig(stage=stages.test))
-jobs.a = Job("a", JobConfig(stage=stages.test))
 
 workflow = [
     Rule(variables.pipeline_source_is(PipelineSource.push) & variables.CI_OPEN_MERGE_REQUESTS.is_set(), when=When.never),

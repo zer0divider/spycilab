@@ -34,6 +34,27 @@ def test_simple_pipeline():
     assert p_yaml.get("stages") == ["Building Stuff", "Testing Stuff"]
 
 
+def test_preserve_order_in_stage():
+    s = StageStore()
+    s.stuff = Stage("stuff", preserve_order=True)
+
+    j = JobStore()
+    j.C = Job("C", JobConfig(stage=s.stuff))
+    j.B = Job("B", JobConfig(stage=s.stuff))
+    j.A = Job("A", JobConfig(stage=s.stuff))
+
+    p = Pipeline(jobs=j, stages=s)
+    p_yaml = p.to_yaml()
+    assert p_yaml.get("\u200BC") is not None
+    assert p_yaml.get("\u200B\u200BB") is not None
+    assert p_yaml.get("\u200B\u200B\u200BA") is not None
+
+    # test whether order-preserving hack works in theory
+    l = ["\u200B\u200BA", "\u200BB"]
+    l.sort()
+    assert l[0] == "\u200BB"
+
+
 def test_variable():
     # simple variable
     v = Variable(default_value="A", description="This is a normal variable", options=["A", "B"])
