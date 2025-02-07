@@ -5,6 +5,7 @@
 
 import argparse
 import sys
+import subprocess
 
 from .overridable_yaml_object import OverridableYamlObject
 from .variable import Variable, VariableStore
@@ -114,6 +115,8 @@ class Pipeline(OverridableYamlObject):
         # run sub command
         run_arg_parser = sub_parsers.add_parser("run", description="Run a single job from the pipeline.")
         run_arg_parser.add_argument("job", help="internal name of the job to run")
+        prefix_flag_name = "--with-prefix"
+        run_arg_parser.add_argument(prefix_flag_name, action="store_true", help="Starts a subprocess which runs the job with its specified run prefix.")
         run_arg_parser.set_defaults(command="run")
         self.add_variable_argument(run_arg_parser)
         # generate sub command
@@ -146,7 +149,23 @@ class Pipeline(OverridableYamlObject):
                     self.output = self.args.output
                 self.write_output()
             case "run":
-                exit(self.run(self.args.job))
+                j = self.jobs.get(self.args.job)
+                if j is None:
+                    print(f"job '{self.args.job.internal_name}' does not exist (are you using the internal name?)", file=sys.stderr)
+                    exit(1)
+                if self.args.with_prefix:
+                    if not j.config.run_prefix:
+                        print(f"job '{self.args.job}' doesn't have any prefix, running normally ...")
+                    else:
+                        args_without_prefix_flag = []
+                        for a in sys.argv:
+                            if a != prefix_flag_name:
+                                args_without_prefix_flag.append(a)
+                        full_prefix_cmd = j.config.run_prefix.split(" ")+args_without_prefix_flag
+                        full_prefix_cmd_joined = " ".join(full_prefix_cmd)
+                        print(f"Running with prefix: {full_prefix_cmd_joined}")
+                        exit(subprocess.run(full_prefix_cmd).returncode)
+                exit(self.run(j))
             case _:
                 arg_parser.print_help()
 
@@ -172,7 +191,7 @@ class Pipeline(OverridableYamlObject):
                 if self.args.all or mode != When.never:
                     print(f"  - {j.name} ({j.internal_name}): {mode}")
 
-    def run(self, job: str) -> int:
+    def run(self, j: Job) -> int:
         # show all variables that want to be shown
         print(f"CI Variables :")
         for v in self.vars.all():
@@ -180,30 +199,25 @@ class Pipeline(OverridableYamlObject):
                 print(f"  {v.name}: '{v.value}'")
         print("  ... (some may be hidden)\n")
 
-        j = self.jobs.get(job)
-        if j is None:
-            print(f"job '{job}' does not exist", file=sys.stderr)
-            return 1
+        # set specific built-in env variables
+        if not self.vars.CI_JOB_NAME.value:
+            self.vars.CI_JOB_NAME.value = j.name
+        print(f"# Starting job '{j.name}' ({j.internal_name})\n", flush=True)
+        job_result = j.run()
+        if isinstance(job_result, bool): # important to check bool first, because 'bool' is a subclass of 'int' (https://peps.python.org/pep-0285/)
+            ret = 0 if job_result else 1
+        elif isinstance(job_result, int):
+            ret = job_result
         else:
-            # set specific built-in env variables
-            if not self.vars.CI_JOB_NAME.value:
-                self.vars.CI_JOB_NAME.value = j.name
-            print(f"# Starting job '{j.name}' ({j.internal_name})\n", flush=True)
-            job_result = j.run()
-            if isinstance(job_result, bool): # important to check bool first, because 'bool' is a subclass of 'int' (https://peps.python.org/pep-0285/)
-                ret = 0 if job_result else 1
-            elif isinstance(job_result, int):
-                ret = job_result
-            else:
-                print(f"Warning: Job '{j.internal_name}' did not return bool or integer.", file=sys.stderr)
-                ret = 0
+            print(f"Warning: Job '{j.internal_name}' did not return bool or integer.", file=sys.stderr)
+            ret = 0
 
-            if ret == 0:
-                print(f"# Job finished successfully.", flush=True)
-            else:
-                print(f"# Job FAILED.", flush=True)
+        if ret == 0:
+            print(f"# Job finished successfully.", flush=True)
+        else:
+            print(f"# Job FAILED.", flush=True)
 
-            return ret
+        return ret
 
     def to_yaml_impl(self):
         var_args = []

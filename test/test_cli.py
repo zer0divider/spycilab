@@ -61,6 +61,17 @@ def test_run():
     assert "Job FAILED" in output
     assert r.returncode == 1
 
+def test_run_with_prefix():
+    # job succeeds
+    r = subprocess.run([pipeline_script, "run", "--with-prefix", "prefix" ], check=True, capture_output=True)
+    stdout = r.stdout.decode()
+    stderr = r.stderr.decode()
+    assert "Running with prefix: time --portability" in stdout
+    # check output from command 'time'
+    assert "real 1." in stderr # job runs for roughly 1 second
+    assert "user" in stderr
+    assert "sys" in stderr
+
 
 def pipeline_list(additional_params:list[str]|None=None) -> str:
     """
@@ -82,7 +93,6 @@ def test_list_simple():
 
 
 def test_list_with_var():
-    # all jobs
     o = pipeline_list(["-v", "test_variable=A"])
     assert "Testing:\n  - Always Fails (fail): always\n  - Unit Tests (test): always" in o
 
@@ -90,4 +100,4 @@ def test_list_with_var():
 def test_list_all():
     # all jobs
     o = pipeline_list(["--all"])
-    assert "Testing:\n  - Always Fails (fail): always\n  - Unit Tests (test): never" in o
+    assert "Testing:\n  - Always Fails (fail): always\n  - Prefix Job (prefix): never\n  - Unit Tests (test): never" in o
