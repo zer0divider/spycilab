@@ -1,5 +1,5 @@
 from spycilab import VariableStore, Pipeline, Variable, BoolVariable, StageStore, JobStore, Stage, Job, \
-    JobConfig
+    JobConfig, Rule, When
 
 
 def test_empty_pipeline():
@@ -101,3 +101,18 @@ def test_variable_store():
         assert v.name == b
     assert e.to_yaml() == {"MY_VARIABLE": "hi"}
     assert e.CI_DEFAULT_BRANCH.value == "main"
+
+def test_rule_set_comparision():
+    v = Variable("test")
+    v.name = "v"
+    a = [Rule(v.equal_to("test"))]
+    b = [Rule(v.equal_to("test"))]
+    assert Rule.sets_equal(a, b)
+    b = [Rule(v.equal_to("test"), when=When.never)]
+    assert not Rule.sets_equal(a, b)
+    b = a
+    assert Rule.sets_equal(a, b)
+    b = None
+    assert not Rule.sets_equal(a, b)
+    a = None
+    assert Rule.sets_equal(a, b)

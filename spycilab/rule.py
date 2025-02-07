@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .overridable_yaml_object import OverridableYamlObject
 
 from .variable import Condition
@@ -25,6 +27,26 @@ class Rule(OverridableYamlObject):
             return True
         else:
             return self.condition.eval()
+
+    @staticmethod
+    def sets_equal(a:list[Rule]|None, b:list[Rule]|None) -> bool:
+        """
+        Check whether two rule lists generate identical yaml outputs
+        :return:
+        """
+        if (a is None) and (b is None):
+            return True
+        if (a is None) != (b is None):
+            return False
+        if len(a) != len(b):
+            return False
+        for i in range(len(a)):
+            if a[i] is not b[i]: # this is quicker if rules are actually the same object (common case)
+                if a[i].to_yaml() != b[i].to_yaml(): # not same object, check whether generated yaml are identical
+                    return False
+
+        return True
+
 
     def to_yaml_impl(self) -> dict:
         y = {}
