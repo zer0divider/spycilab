@@ -19,13 +19,14 @@ def test_complex_job():
     v = Variable("test")
     v.name = "var"
     in_artifact = Artifacts(["in.txt"])
-    dep_j = Job("first", JobConfig(stage=s, artifacts=in_artifact))
+    common_rule = Rule(v.equal_to("test"), when=When.always, allow_failure=True, yaml_override={"changes": None})
+    dep_j = Job("first", JobConfig(stage=s, artifacts=in_artifact, rules=common_rule))
     out_artifact = Artifacts(["out.txt"], when=When.on_success)
-    dep2_j = Job("second", JobConfig(stage=s))
+    dep2_j = Job("second", JobConfig(stage=s, rules=common_rule))
     j = Job("my job",
             JobConfig(stage=s,
             work=None,
-            rules=[Rule(v.equal_to("test"), when=When.always, allow_failure=True, yaml_override={"changes": None})],
+            rules=[common_rule],
             artifacts=out_artifact,
             needs=[in_artifact, dep2_j],
             tags=["my_tag"],
@@ -44,6 +45,29 @@ def test_complex_job():
     assert j_yaml["variables"]["JOB_RUN_PREFIX"] == "PREFIX"
     assert j_yaml["variables"]["INTERNAL_JOB_NAME"] == "j"
     assert j_yaml["additional_keyword"] == [ "test1", "test2" ]
+
+def test_needs_divergent_rules():
+    s = Stage("test stage")
+    v = Variable()
+    v.name = "v"
+    # different rules
+    rule1 = Rule(v.equal_to("test"))
+    rule2 = Rule(v.equal_to("test2"))
+    j1 = Job("Job 1", JobConfig(stage=s, rules=[rule1]))
+    j1.internal_name = "j1"
+    j2 = Job("Job 2", JobConfig(stage=s, needs=j1, rules=rule2))
+    j2.internal_name = "j2"
+    try:
+        j2.to_yaml()
+        assert False, "Expected an exception to be thrown."
+    except RuntimeError as e:
+        assert "rules diverge" in str(e)
+
+    # allowing divergent rules
+    j2.config.needs_check_diverging_rules = False
+    j2.to_yaml()
+
+
 
 def test_extend():
     # extend by single job config
