@@ -166,7 +166,7 @@ class Pipeline(OverridableYamlObject):
                     mode = When.never
                     for r in j.config.rules:
                         if r.eval():
-                            mode = r.when
+                            mode = r.when or When.always
                             break
 
                 if self.args.all or mode != When.never:
