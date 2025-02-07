@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 from spycilab import *
-from subprocess import run
-import sys
+import time
 
 stages = StageStore()
 stages.test = Stage("Testing")
@@ -17,6 +16,8 @@ jobs.test = Job("Unit Tests", JobConfig(stage=stages.test, work=lambda: print(f"
                                                     when=When.always)]))
 
 jobs.fail = Job("Always Fails", JobConfig(stage=stages.test, work=lambda: print("fail") or False))
+
+jobs.prefix = Job("Prefix Job", JobConfig(stage=stages.test, rules=[Rule(when=When.never)], run_prefix="time --portability", work=lambda: time.sleep(1) or True))
 
 workflow = [
     Rule(variables.CI_COMMIT_BRANCH.equal_to("master")),
