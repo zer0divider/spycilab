@@ -4,7 +4,8 @@ import yaml
 import os
 import pytest
 
-pipeline_script = str(pathlib.Path(__file__).parent / "resources" / "pipeline.py")
+pipeline_dir = pathlib.Path(__file__).parent / "resources"
+pipeline_script = str(pipeline_dir / "pipeline.py")
 
 
 @pytest.fixture
@@ -16,6 +17,20 @@ def pipeline_yaml():
     subprocess.run([pipeline_script, "generate", "--output", output_file], check=True)
     yield output_file
     os.remove(output_file)
+
+def create_config(file:str, content:dict):
+    with open(file, "w") as f:
+        yaml.dump(content, f)
+    yield content
+    os.remove(file)
+
+@pytest.fixture
+def pipeline_config():
+    yield from create_config(".spycilab.yml", {"variables": {"test_variable": "FromConfig"}})
+
+@pytest.fixture
+def pipeline_local_config():
+    yield from create_config(".local.spycilab.yml", {"variables": {"test_variable": "FromLocalConfig"}})
 
 
 def test_generate(pipeline_yaml):
@@ -60,6 +75,20 @@ def test_run():
     output = r.stdout.decode()
     assert "Job FAILED" in output
     assert r.returncode == 1
+
+def test_run_with_config(pipeline_config):
+    # config loaded
+    r = subprocess.run([pipeline_script, "run", "test"], check=True, capture_output=True)
+    output = r.stdout.decode()
+    var_value = pipeline_config["variables"]["test_variable"]
+    assert f"testing stuff (var='{var_value}')..." in output
+
+def test_run_with_local_config(pipeline_config, pipeline_local_config):
+    # local config loaded and overwrites normal config
+    r = subprocess.run([pipeline_script, "run", "test"], check=True, capture_output=True)
+    output = r.stdout.decode()
+    var_value = pipeline_local_config["variables"]["test_variable"]
+    assert f"testing stuff (var='{var_value}')..." in output
 
 def test_run_with_prefix():
     # job succeeds
