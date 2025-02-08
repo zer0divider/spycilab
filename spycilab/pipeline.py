@@ -31,10 +31,12 @@ class Pipeline(OverridableYamlObject):
         self.config = None
         self.run_script = "./pipeline.py"
         self.output = ".gitlab-ci.yml"
+        # try loading config files in that order
+        self.config_files = [ ".spycilab.yaml", ".spycilab.yml", ".local.spycilab.yaml", ".local.spycilab.yml" ]
 
-    def load_config(self):
+    def load_config(self, config_file):
         try:
-            with open(".spycilab.yml", "r") as f:
+            with open(config_file, "r") as f:
                 loader = yaml.Loader(f)
                 self.config = loader.get_data()
             if self.config is not None:
@@ -50,8 +52,10 @@ class Pipeline(OverridableYamlObject):
                     for k,value in variables.items():
                         v = self.vars.get(k)
                         if v is None:
-                            raise RuntimeError(f"no such variable {k}")
+                            raise RuntimeError(f"In file {config_file}: no such variable {k}")
                         v.value = value
+
+            print(f"Loaded config '{config_file}'.")
 
         except FileNotFoundError:
             pass
@@ -130,7 +134,8 @@ class Pipeline(OverridableYamlObject):
         list_arg_parser.add_argument("--all", action="store_true", help="Show all jobs, even ones disabled by rules.")
         self.args = arg_parser.parse_args(cmd_args)
 
-        self.load_config()
+        for c in self.config_files:
+            self.load_config(c)
 
         self.check_jobs()
 
