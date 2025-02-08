@@ -13,3 +13,7 @@ variables:
     CI_DEFAULT_BRANCH: main
     CI_PIPELINE_SOURCE: push
 ```
+
+## Local Config
+Additionally, you can create a `.local.spycilab.yml` file which is supposed to be added by each user (not added to version control)
+for testing purposes. This file overrides configurations in the `.spycilab.yml` file.
