@@ -15,7 +15,7 @@ jobs.test = Job("Unit Tests", JobConfig(stage=stages.test, work=lambda: print(f"
                                         rules=[Rule(variables.test_variable.equal_to("A") | variables.test_variable.equal_to("B"),
                                                     when=When.always)]))
 
-jobs.fail = Job("Always Fails", JobConfig(stage=stages.test, work=lambda: print(f"fail") or False))
+jobs.fail = Job("Always Fails", JobConfig(stage=stages.test, work=lambda: print("fail") or False))
 
 jobs.prefix = Job("Prefix Job", JobConfig(stage=stages.test, rules=[Rule(when=When.never)], run_prefix="time --portability", work=lambda: time.sleep(1) or True))
 
