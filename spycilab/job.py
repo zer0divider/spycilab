@@ -7,12 +7,38 @@ from __future__ import annotations
 
 import typing
 
+from reportlab.lib.validators import isCallable
+
 from .overridable_yaml_object import OverridableYamlObject
 from .typed_store import TypedStore
 from .artifact import Artifacts
 from .rule import Rule, When
 from .stage import Stage
 
+class Trigger(OverridableYamlObject):
+    """
+    Describes a pipeline trigger (multi-project pipeline or parent-child pipeline).
+    This object can be passed as 'work' in JobConfig
+    """
+    def __init__(self, project:str|None = None, strategy_depend:bool = False, variables:dict[str,str]|None = None, yaml_override:dict|None=None):
+        super().__init__(yaml_override)
+        self.project = project
+        self.strategy_depend = strategy_depend
+        self.variables = variables
+
+    def to_yaml_impl(self) -> dict:
+        y = {
+            "project": self.project
+        }
+        if self.strategy_depend:
+            y["strategy"] = "depend"
+
+        if self.variables:
+            y["variables"] = {}
+            for k, v in self.variables.items():
+                y["variables"][k] = v
+
+        return y
 
 class JobConfig:
     """
@@ -21,7 +47,7 @@ class JobConfig:
     """
 
     def __init__(self, stage: Stage = None,
-                 work: typing.Callable[[], bool | int] | None = None,
+                 work: typing.Callable[[], bool | int] | Trigger | None = None,
                  rules: None | list[Rule] | Rule = None,
                  artifacts: None | Artifacts = None,
                  needs: None | list[Artifacts | Job] | Artifacts | Job = None,
@@ -152,11 +178,15 @@ class Job(OverridableYamlObject):
         return self.name > other.name
 
     def run(self):
-        if self.config.work is not None:
+        if isCallable(self.config.work):
             return self.config.work()
-        else:
+        elif self.config.work is None:
             print("Nothing to do.")
             return 0
+        elif isinstance(self.config.work, Trigger):
+            print(f"Would trigger pipeline of project '{self.config.work.project}' (this only works in the actual pipeline)")
+            return 0
+
 
     def to_yaml_impl(self):
         if self.internal_name is None:
@@ -200,6 +230,8 @@ class Job(OverridableYamlObject):
             y["when"] = str(self.config.when)
         if self.config.allow_failure is not None:
             y["allow_failure"] = str(self.config.allow_failure)
+        if isinstance(self.config.work, Trigger):
+            y["trigger"] = self.config.work.to_yaml()
 
         return y
 
