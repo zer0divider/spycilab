@@ -156,7 +156,7 @@ class Pipeline(OverridableYamlObject):
             case "run":
                 j = self.jobs.get(self.args.job)
                 if j is None:
-                    print(f"job '{self.args.job.internal_name}' does not exist (are you using the internal name?)", file=sys.stderr)
+                    print(f"job '{self.args.job}' does not exist (are you using the internal name?)", file=sys.stderr)
                     exit(1)
                 if self.args.with_prefix:
                     if not j.config.run_prefix:
