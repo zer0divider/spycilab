@@ -62,7 +62,18 @@ See [docs](./docs):
 - [Configuration File](./docs/config.md)
 
 ## Install
+### Install locally
 Simply download this repo and run the following command from the repository root:
+```bash
+pip install .
+``` 
+
+### Install on GitLab Runner
+*Spycilab* is designed to have minimal dependencies when running jobs in the pipeline.
+So if your runner has Python installed (see [pyproject.toml](./pyproject.toml) for minimum required version)
+you can (probably) simply add the `spycilab` folder to your repository and import it from there in your `pipeline.py`.
+
+If installing *spycilab* on the runner's system directly is no problem for you, then simply install it as you would locally:
 ```bash
 pip install .
 ``` 

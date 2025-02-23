@@ -12,10 +12,11 @@ from .variable import Variable, VariableStore
 from .job import JobConfig, Job, JobStore
 from .stage import Stage, StageStore
 from .rule import Rule, When
-import yaml
+# NOTE: import yaml only when needed to minimize dependencies in pipeline
 
 class Pipeline(OverridableYamlObject):
-    def __init__(self, jobs: JobStore, stages: StageStore, variables: None | VariableStore = None, workflow: list[Rule] = None, yaml_override: dict | None = None):
+    def __init__(self, jobs: JobStore, stages: StageStore, variables: None | VariableStore = None,
+                 workflow: list[Rule] = None, yaml_override: dict | None = None):
         super().__init__(yaml_override)
         self.stages = stages
         if variables is None:
@@ -32,9 +33,10 @@ class Pipeline(OverridableYamlObject):
         self.run_script = "./pipeline.py"
         self.output = ".gitlab-ci.yml"
         # try loading config files in that order
-        self.config_files = [ ".spycilab.yaml", ".spycilab.yml", ".local.spycilab.yaml", ".local.spycilab.yml" ]
+        self.config_files = [".spycilab.yaml", ".spycilab.yml", ".local.spycilab.yaml", ".local.spycilab.yml"]
 
     def load_config(self, config_file):
+        import yaml  # import yaml only when needed to minimize dependencies in pipeline
         try:
             with open(config_file, "r") as f:
                 loader = yaml.Loader(f)
@@ -49,7 +51,7 @@ class Pipeline(OverridableYamlObject):
 
                 variables = self.config.get("variables")
                 if variables is not None:
-                    for k,value in variables.items():
+                    for k, value in variables.items():
                         v = self.vars.get(k)
                         if v is None:
                             raise RuntimeError(f"In file {config_file}: no such variable {k}")
@@ -63,6 +65,11 @@ class Pipeline(OverridableYamlObject):
     @staticmethod
     def add_variable_argument(sub_parser):
         sub_parser.add_argument("-v", required=False, action="append", help="set a variable (-v VAR=VALUE)")
+
+    @staticmethod
+    def add_no_config_flag(sub_parser):
+        sub_parser.add_argument("--no-config", required=False, action="store_true",
+                                help="Do not load config from from files (e.g. .spycilab.yaml).")
 
     def check_variables(self, variables):
         if variables is not None:
@@ -97,6 +104,7 @@ class Pipeline(OverridableYamlObject):
                     break
 
     def write_output(self):
+        import yaml  # import yaml only when needed to minimize dependencies in pipeline
         print(f"writing generated gitlab-ci yaml to '{self.output}'")
         with open(self.output, "w") as f:
             f.write("############################################\n")
@@ -108,34 +116,40 @@ class Pipeline(OverridableYamlObject):
         all_jobs = list(self.jobs.all())
         for ji, j in enumerate(all_jobs):
             cmp = j.name
-            for other_ji in range(ji+1, len(all_jobs)):
+            for other_ji in range(ji + 1, len(all_jobs)):
                 if j.name == all_jobs[other_ji].name:
-                    raise RuntimeError(f"Job '{j.internal_name}' and '{all_jobs[other_ji].internal_name}' have the same name ('{j.name}')")
+                    raise RuntimeError(
+                        f"Job '{j.internal_name}' and '{all_jobs[other_ji].internal_name}' have the same name ('{j.name}')")
 
     def main(self, cmd_args: list[str] | None = None):
-        arg_parser = argparse.ArgumentParser(description="This is the pipeline generator and runner.",
-                                             epilog="Call with no arguments to generate gitlab-ci yaml." )
+        arg_parser = argparse.ArgumentParser(description="This is the pipeline generator and runner.")
         sub_parsers = arg_parser.add_subparsers(required=True, title="subcommands")
         # run sub command
         run_arg_parser = sub_parsers.add_parser("run", description="Run a single job from the pipeline.")
         run_arg_parser.add_argument("job", help="internal name of the job to run")
         prefix_flag_name = "--with-prefix"
-        run_arg_parser.add_argument(prefix_flag_name, action="store_true", help="Starts a subprocess which runs the job with its specified run prefix.")
+        run_arg_parser.add_argument(prefix_flag_name, action="store_true",
+                                    help="Starts a subprocess which runs the job with its specified run prefix.")
         run_arg_parser.set_defaults(command="run")
         self.add_variable_argument(run_arg_parser)
+        self.add_no_config_flag(run_arg_parser)
         # generate sub command
         gen_arg_parser = sub_parsers.add_parser("generate", description="Generate GitLab-CI YAML file.")
-        gen_arg_parser.add_argument("--output", required=False, help="File to write generated YAML to. This option overrides setting in configuration file.")
+        gen_arg_parser.add_argument("--output", required=False,
+                                    help="File to write generated YAML to. This option overrides setting in configuration file.")
         gen_arg_parser.set_defaults(command="generate")
+        self.add_no_config_flag(gen_arg_parser)
         # list sub command
         list_arg_parser = sub_parsers.add_parser("list", description="List all pipeline jobs")
-        self.add_variable_argument(list_arg_parser)
         list_arg_parser.set_defaults(command="list")
         list_arg_parser.add_argument("--all", action="store_true", help="Show all jobs, even ones disabled by rules.")
+        self.add_variable_argument(list_arg_parser)
+        self.add_no_config_flag(list_arg_parser)
         self.args = arg_parser.parse_args(cmd_args)
 
-        for c in self.config_files:
-            self.load_config(c)
+        if not self.args.no_config:
+            for c in self.config_files:
+                self.load_config(c)
 
         self.check_jobs()
 
@@ -166,7 +180,7 @@ class Pipeline(OverridableYamlObject):
                         for a in sys.argv:
                             if a != prefix_flag_name:
                                 args_without_prefix_flag.append(a)
-                        full_prefix_cmd = j.config.run_prefix.split(" ")+args_without_prefix_flag
+                        full_prefix_cmd = j.config.run_prefix.split(" ") + args_without_prefix_flag
                         full_prefix_cmd_joined = " ".join(full_prefix_cmd)
                         print(f"Running with prefix: {full_prefix_cmd_joined}")
                         exit(subprocess.run(full_prefix_cmd).returncode)
@@ -209,7 +223,8 @@ class Pipeline(OverridableYamlObject):
             self.vars.CI_JOB_NAME.value = j.name
         print(f"# Starting job '{j.name}' ({j.internal_name})\n", flush=True)
         job_result = j.run()
-        if isinstance(job_result, bool): # important to check bool first, because 'bool' is a subclass of 'int' (https://peps.python.org/pep-0285/)
+        if isinstance(job_result,
+                      bool):  # important to check bool first, because 'bool' is a subclass of 'int' (https://peps.python.org/pep-0285/)
             ret = 0 if job_result else 1
         elif isinstance(job_result, int):
             ret = job_result
@@ -225,10 +240,11 @@ class Pipeline(OverridableYamlObject):
         return ret
 
     def to_yaml_impl(self):
-        var_args = []
+        args = ["--no-config"]
+        # collect variables as arguments
         vars_yaml = self.vars.to_yaml()
         for e in self.vars.all():
-            var_args.append('-v ' + e.name + '="${' + e.name + '}"')
+            args.append('-v ' + e.name + '="${' + e.name + '}"')
         p = {}
         # workflow
         if self.workflow is not None:
@@ -247,7 +263,9 @@ class Pipeline(OverridableYamlObject):
         p["stages"] = self.stages.to_yaml()
 
         # job base
-        p[".job_base"] = {"script": "${JOB_RUN_PREFIX} "+self.run_script+" run ${INTERNAL_JOB_NAME} " + " ".join(var_args)}
+        p[".job_base"] = {
+            "script": "${JOB_RUN_PREFIX} " + self.run_script + " run ${INTERNAL_JOB_NAME} " + " ".join(args)
+        }
 
         # add jobs
         zero_width_space = "\u200B"

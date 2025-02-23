@@ -45,7 +45,7 @@ def test_generate(pipeline_yaml):
     assert p_yaml["stages"] == ["Testing"]
 
     # jobs
-    assert p_yaml[".job_base"]["script"].startswith("${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME}")
+    assert p_yaml[".job_base"]["script"].startswith("${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME} --no-config")
     assert p_yaml["Unit Tests"]["stage"] == "Testing"
     assert p_yaml["Unit Tests"]["extends"] == ".job_base"
     assert p_yaml["Unit Tests"]["variables"]["INTERNAL_JOB_NAME"] == "test"
