@@ -52,6 +52,11 @@ class Variable(OverridableYamlObject):
         if self.name is None:
             raise RuntimeError("usage of variable before name was given")
 
+    def check_value(self):
+        if self.options is not None:
+            if self.value not in self.options:
+                raise ValueError(f"Invalid value '{self.value}' for variable '{self.name}', valid options are {self.options}")
+
     def __str__(self) -> str:
         return self.value
 
@@ -364,6 +369,10 @@ class VariableStore(TypedStore):
         """
         for k, v in self.__dict__.items():
             v.name = k
+
+    def check_all(self):
+        for v in self.__dict__.values():
+            v.check_value()
 
     def to_yaml(self):
         vs = {}
