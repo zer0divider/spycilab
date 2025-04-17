@@ -12,6 +12,8 @@ from .variable import Variable, VariableStore
 from .job import JobConfig, Job, JobStore
 from .stage import Stage, StageStore
 from .rule import Rule, When
+
+
 # NOTE: import yaml only when needed to minimize dependencies in pipeline
 
 class Pipeline(OverridableYamlObject):
@@ -194,7 +196,18 @@ class Pipeline(OverridableYamlObject):
             case _:
                 arg_parser.print_help()
 
+    def show_variables(self):
+        """
+         show all variables that want to be shown
+        """
+        print(f"CI Variables :")
+        for v in self.vars.all():
+            if v.show:
+                print(f"  {v.name}: '{v.value}'")
+        print("  ... (some may be hidden)\n")
+
     def list(self):
+        self.show_variables()
         jobs_by_stage = {}
         for s in self.stages.all():
             jobs_by_stage[s.name] = []
@@ -217,12 +230,7 @@ class Pipeline(OverridableYamlObject):
                     print(f"  - {j.name} ({j.internal_name}): {mode}")
 
     def run(self, j: Job) -> int:
-        # show all variables that want to be shown
-        print(f"CI Variables :")
-        for v in self.vars.all():
-            if v.show:
-                print(f"  {v.name}: '{v.value}'")
-        print("  ... (some may be hidden)\n")
+        self.show_variables()
 
         # set specific built-in env variables
         if not self.vars.CI_JOB_NAME.value:

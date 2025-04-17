@@ -105,9 +105,9 @@ class BoolVariable(Variable):
     TRUE_STRING = "yes"
     FALSE_STRING = "no"
 
-    def __init__(self, default_value: bool, description=None, yaml_override: dict | None = None):
+    def __init__(self, default_value: bool, description=None, show: bool = False, yaml_override: dict | None = None):
         super().__init__(default_value=self.TRUE_STRING if default_value else self.FALSE_STRING,
-                         options=["yes", "no"], description=description, yaml_override=yaml_override)
+                         options=["yes", "no"], description=description, show=show, yaml_override=yaml_override)
 
     def set(self, new_value: bool):
         self.value = self.TRUE_STRING if new_value else self.FALSE_STRING
