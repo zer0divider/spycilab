@@ -73,6 +73,14 @@ def test_variable():
     v.name = "v2"
     assert v.to_yaml() == {"value": "B", "description": "realdeal", "hi": "there"}
 
+    # test variable boolean eval
+    v = Variable(default_value="")
+    if v:
+        assert False, "The variable should have been evaluated to False"
+    v = Variable(default_value="something")
+    if not v:
+        assert False, "The variable should have been evaluated to True"
+
 
 def test_bool_variable():
     # simple variable
@@ -84,6 +92,14 @@ def test_bool_variable():
     assert bool(v) == True
     v.set(False)
     assert bool(v) == False
+
+    # invalid value
+    v.value = "yay"
+    try:
+        b = bool(v)
+        assert False, "bool conversion should have thrown"
+    except ValueError as e:
+        pass
 
     v_yaml = v.to_yaml()
     assert v_yaml == {"value": v.default_value, "description": v.description, "options": ["yes", "no"]}
@@ -102,7 +118,7 @@ def test_variable_store():
     assert e.to_yaml() == {"MY_VARIABLE": "hi"}
     assert e.CI_DEFAULT_BRANCH.value == "main"
 
-def test_rule_set_comparision():
+def test_rule_set_comparison():
     v = Variable("test")
     v.name = "v"
     a = [Rule(v.equal_to("test"))]

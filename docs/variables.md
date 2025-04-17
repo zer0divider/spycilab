@@ -24,6 +24,14 @@ The value of a variable can be accessed through the `.value` member:
 ```python
 print(variables.my_variable.value) # prints default "some value" if variable was not set by user
 ```
+Conversion to string and bool is built-in, so:
+```python
+variables.my_variable = Variable(default_value="abc")
+...
+print(variables.my_variable) # "abc"
+if variables.my_variable:
+    print("my_variable is not empty")
+```
 Be careful though when using variables in a job, as variable values will only ever be set through the `Pipeline().main()` method.
 This is how to **NOT** do it:
 ```python
@@ -60,4 +68,14 @@ There is a convenient `Variable` derivative `BoolVariable` that automatically de
 A default value is required (`True`/`False`).
 ```python
 variables.bool_var = BoolVariable(default_value=True)
+...
+if variables.bool_var:
+    print("Variable is set to True ('yes')")
 ```
+Please note that the `value` member of a BoolVariable is still a string, so:
+```python
+variables.bool_var = BoolVariable(default_value=False)
+if variables.bool_var.value:
+    print("Always true, if variable was set to some value (not the empty string)")
+```
+

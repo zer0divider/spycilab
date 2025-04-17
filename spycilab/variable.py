@@ -12,6 +12,7 @@ from enum import Enum
 from .overridable_yaml_object import OverridableYamlObject
 from .typed_store import TypedStore
 
+
 class PipelineSource(EnumString):
     api = "api"
     external = "external"
@@ -26,7 +27,9 @@ class Variable(OverridableYamlObject):
     """
     This class represents a CI/CD variable.
     """
-    def __init__(self, default_value: str = "", description=None, options: None | list[str] = None, yaml_override:dict | None = None, show=False):
+
+    def __init__(self, default_value: str = "", description=None, options: None | list[str] = None,
+                 yaml_override: dict | None = None, show=False):
         """
         :param default_value:
         :param description: see Gitlab-CI YAML
@@ -35,7 +38,7 @@ class Variable(OverridableYamlObject):
         :param show: if true print the value of the variable before running a job
         """
         super().__init__(yaml_override)
-        self.name = None # name is set from variable store
+        self.name = None  # name is set from variable store
         self.default_value = default_value
         self.show = show
         self.value = default_value
@@ -52,6 +55,9 @@ class Variable(OverridableYamlObject):
     def __str__(self) -> str:
         return self.value
 
+    def __bool__(self) -> str:
+        return self.value is not None and self.value != ""
+
     def equal_to(self, other: str | Variable) -> Condition:
         return Condition.equal(self, other)
 
@@ -67,7 +73,8 @@ class Variable(OverridableYamlObject):
     def is_set(self):
         return Condition.is_set(self)
 
-    def full_match(self, pattern:str, examples_match:list[str] | None = None, examples_not_match:list[str]|None = None):
+    def full_match(self, pattern: str, examples_match: list[str] | None = None,
+                   examples_not_match: list[str] | None = None):
         return Condition.full_match(self, pattern, examples_match, examples_not_match)
 
     def to_yaml_impl(self):
@@ -84,11 +91,12 @@ class Variable(OverridableYamlObject):
 
         return y
 
-    def __eq__(self, other:str|Variable) -> bool:
+    def __eq__(self, other: str | Variable) -> bool:
         if isinstance(other, str):
             return self.value == other
         else:
             return self.value == other.value
+
 
 class BoolVariable(Variable):
     """
@@ -97,13 +105,12 @@ class BoolVariable(Variable):
     TRUE_STRING = "yes"
     FALSE_STRING = "no"
 
-    def __init__(self, default_value: bool, description=None, yaml_override:dict | None = None):
+    def __init__(self, default_value: bool, description=None, yaml_override: dict | None = None):
         super().__init__(default_value=self.TRUE_STRING if default_value else self.FALSE_STRING,
                          options=["yes", "no"], description=description, yaml_override=yaml_override)
 
     def set(self, new_value: bool):
         self.value = self.TRUE_STRING if new_value else self.FALSE_STRING
-
 
     def is_true(self) -> Condition:
         return Condition.is_true(self)
@@ -123,10 +130,12 @@ class BoolVariable(Variable):
         else:
             raise ValueError(f"BoolVariable '{self.name}' contains illegal value '{self.value}'")
 
+
 class Condition:
     """
     This implements the 'if' pipeline statement
     """
+
     class Type(Enum):
         EQUAL = 0
         NOT_EQUAL = 1
@@ -281,7 +290,6 @@ class Condition:
                 raise RuntimeError("Invalid type")
 
 
-
 class VariableStore(TypedStore):
     """
     This class provides access to Variables.
@@ -310,6 +318,7 @@ class VariableStore(TypedStore):
         "CI_JOB_NAME",
         "CI_JOB_TOKEN"
     ]
+
     def __init__(self):
         self.CI_DEFAULT_BRANCH = Variable("main")
         self.CI_PIPELINE_SOURCE = Variable()
@@ -353,7 +362,7 @@ class VariableStore(TypedStore):
         Supposed to be called by pipeline object, after all variables have been added.
         :return:
         """
-        for k,v in self.__dict__.items():
+        for k, v in self.__dict__.items():
             v.name = k
 
     def to_yaml(self):
@@ -369,4 +378,3 @@ class VariableStore(TypedStore):
             else:
                 raise ValueError(f"VariableStore member '{k}' is not of type Variable")
         return vs
-
