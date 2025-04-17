@@ -68,6 +68,21 @@ def test_variable():
     v_yaml = v.to_yaml()
     assert v_yaml == {"value": v.default_value, "description": v.description, "options": v.options}
 
+    # variable with invalid value
+    try:
+        v = Variable(default_value="C", options=["A", "B"])
+        assert False, "invalid option is not recognized, should have thrown"
+    except ValueError as _:
+        pass
+    try:
+        # when passing invalid value from commandline (same as from config)
+        var_store = VariableStore()
+        var_store.v = Variable(default_value="A", options=["A", "B"])
+        Pipeline(jobs=JobStore(), stages=StageStore(), variables=var_store).main(cmd_args=["list", "-v", "v=C"])
+        assert False, "invalid option is not recognized, should have thrown"
+    except ValueError as e:
+        assert "invalid option" in str(e).lower()
+
     # variable with override
     v = Variable("B", description="not final", yaml_override={"description": "realdeal", "hi": "there"})
     v.name = "v2"

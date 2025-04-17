@@ -78,9 +78,15 @@ class Pipeline(OverridableYamlObject):
                 if equal_sign_i >= 0:
                     var_name = v[:equal_sign_i]
                     var_value = v[equal_sign_i + 1:]
-                    if not isinstance(self.vars.__dict__.get(var_name), Variable):
+                    current_var = self.vars.__dict__.get(var_name)
+                    # check is an actual Variable
+                    if not isinstance(current_var, Variable):
                         raise RuntimeError(f"No such variable '{var_name}'")
-                    self.vars.__dict__[var_name].value = var_value
+                    # check value if var has options
+                    if current_var.options is not None:
+                        if var_value not in current_var.options:
+                            raise ValueError(f"Invalid option '{var_value}' for variable '{var_name}'")
+                    current_var.value = var_value
                 else:
                     raise RuntimeError(f"Invalid expression for variable mapping '{v}'. Expected VAR=VALUE")
 
