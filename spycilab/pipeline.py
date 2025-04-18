@@ -169,7 +169,7 @@ class Pipeline(OverridableYamlObject):
         self.add_variable_argument(list_arg_parser)
         self.args = arg_parser.parse_args(cmd_args)
 
-        if self.args.no_input_env:
+        if not self.args.no_input_env:
             self.process_variables_from_env()
 
         if not self.args.no_config:
@@ -183,7 +183,7 @@ class Pipeline(OverridableYamlObject):
 
         self.vars.check_all()
 
-        if self.args.no_forward_env:
+        if not self.args.no_forward_env:
             self.write_variables_to_env()
 
         self.check_workflow()
@@ -206,14 +206,12 @@ class Pipeline(OverridableYamlObject):
                     if not j.config.run_prefix:
                         print(f"job '{self.args.job}' doesn't have any prefix, running normally ...")
                     else:
-                        args_without_prefix_flag = []
+                        full_prefix_cmd = j.config.run_prefix
                         for a in sys.argv:
                             if a != prefix_flag_name:
-                                args_without_prefix_flag.append(a)
-                        full_prefix_cmd = j.config.run_prefix.split(" ") + args_without_prefix_flag
-                        full_prefix_cmd_joined = " ".join(full_prefix_cmd)
-                        print(f"Running with prefix: {full_prefix_cmd_joined}")
-                        exit(subprocess.run(full_prefix_cmd).returncode)
+                                full_prefix_cmd += " " + a
+                        print(f"Running with prefix: {full_prefix_cmd}")
+                        exit(subprocess.run(full_prefix_cmd, shell=True).returncode)
                 exit(self.run(j))
             case _:
                 arg_parser.print_help()
