@@ -97,12 +97,12 @@ def test_run_with_env(env_var):
     output = r.stdout.decode()
     assert f"from subprocess: from_cmdline" in output
 
-    # --no-input-env
+    # --no-input-env (environment is ignored as input)
     r = subprocess.run([pipeline_script, "--no-input-env", "run", "test"], check=True, capture_output=True)
     output = r.stdout.decode()
     assert f"testing stuff (var='my_default')..." in output
 
-    # --no-forward-env
+    # --no-forward-env (vars set via commandline are not forwarded to environment)
     r = subprocess.run([pipeline_script, "--no-forward-env", "run", "subprocess", "-v", "test_variable=not_forwarded"], check=True, capture_output=True)
     output = r.stdout.decode()
     assert f"from subprocess: {env_var}" in output
