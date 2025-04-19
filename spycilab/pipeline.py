@@ -101,7 +101,8 @@ class Pipeline(OverridableYamlObject):
     def write_variables_to_env(self):
         # add to environment
         for v in self.vars.all():
-            os.environ[v.name] = v.value
+            if v.value is not None:
+                os.environ[v.name] = v.value
 
     def check_workflow(self):
         # check workflow

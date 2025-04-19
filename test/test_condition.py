@@ -56,35 +56,14 @@ def test_simple():
     var_a.value = "not_empty"
     c = Condition.is_not_empty(var_a)
     cv = var_a.is_not_empty()
-    assert c.to_yaml() == "($a != '')"
-    assert cv.to_yaml() == c.to_yaml()
-    assert c.eval() == True
-    assert cv.eval() == c.eval()
-    var_a.value = "" # empty
-    assert c.eval() == False
-    assert cv.eval() == c.eval()
-
-    # is empty
-    var_a.value = "not_empty"
-    c = Condition.is_empty(var_a)
-    cv = var_a.is_empty()
-    assert c.to_yaml() == "($a == '')"
-    assert cv.to_yaml() == c.to_yaml()
-    assert c.eval() == False
-    assert cv.eval() == c.eval()
-    var_a.value = "" # empty
-    assert c.eval() == True
-    assert cv.eval() == c.eval()
-
-    # is set
-    var_a.value = "not_empty"
-    c = Condition.is_set(var_a)
-    cv = var_a.is_set()
     assert c.to_yaml() == "($a)"
     assert cv.to_yaml() == c.to_yaml()
     assert c.eval() == True
     assert cv.eval() == c.eval()
     var_a.value = "" # empty
+    assert c.eval() == False
+    assert cv.eval() == c.eval()
+    var_a.value = None # no value
     assert c.eval() == False
     assert cv.eval() == c.eval()
 

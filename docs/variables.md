@@ -19,6 +19,22 @@ variables.CI_JOB_NAME
 ...
 ```
 
+## Internal and Environment Variables
+
+Variables from the VariableStore are reflected in the environment (shell), this means the following:
+- input: environment variable set by GitLab are applied to the VariableStore
+- forwarding: any sub process created by the pipeline script can access variables from the VariableStore through the environment
+```mermaid
+flowchart TD
+    GitLab/Shell -->|$CI| pipeline.py
+    Arguments/Config -->|-v MY_VAR=hello| pipeline.py
+    subgraph pipeline.py
+        main -->|VariableStore.CI, VariableStore.MY_VAR| my_job["my_job()"]
+    end
+    pipeline.py -->|$CI, $MY_VAR| subprocess
+```
+These features can be turned off with commandline arguments `--no-input-env` and `--no-forward-env`.
+
 ## Working with Variable Values
 The value of a variable can be accessed through the `.value` member:
 ```python

@@ -28,7 +28,7 @@ class Variable(OverridableYamlObject):
     This class represents a CI/CD variable.
     """
 
-    def __init__(self, default_value: str = "", description=None, options: None | list[str] = None,
+    def __init__(self, default_value: str|None = None, description=None, options: None | list[str] = None,
                  yaml_override: dict | None = None, show=False):
         """
         :param default_value:
@@ -53,11 +53,13 @@ class Variable(OverridableYamlObject):
             raise RuntimeError("usage of variable before name was given")
 
     def check_value(self):
-        if self.options is not None:
+        if self.value is not None and self.options is not None:
             if self.value not in self.options:
                 raise ValueError(f"Invalid value '{self.value}' for variable '{self.name}', valid options are {self.options}")
 
     def __str__(self) -> str:
+        if self.value is None:
+            return ""
         return self.value
 
     def __bool__(self) -> str:
@@ -69,17 +71,11 @@ class Variable(OverridableYamlObject):
     def not_equal_to(self, other: str | Variable) -> Condition:
         return Condition.not_equal(self, other)
 
-    def is_empty(self):
-        return Condition.is_empty(self)
-
-    def is_not_empty(self):
+    def is_not_empty(self) -> Condition:
         return Condition.is_not_empty(self)
 
-    def is_set(self):
-        return Condition.is_set(self)
-
     def full_match(self, pattern: str, examples_match: list[str] | None = None,
-                   examples_not_match: list[str] | None = None):
+                   examples_not_match: list[str] | None = None) -> Condition:
         return Condition.full_match(self, pattern, examples_match, examples_not_match)
 
     def to_yaml_impl(self):
@@ -145,7 +141,7 @@ class Condition:
         EQUAL = 0
         NOT_EQUAL = 1
         FULL_MATCH = 2
-        SET = 3
+        NOT_EMPTY = 3
         AND = 4
         OR = 5
 
@@ -173,18 +169,10 @@ class Condition:
         return c
 
     @staticmethod
-    def is_empty(v: Variable) -> Condition:
-        return Condition.equal(v, "")
-
-    @staticmethod
     def is_not_empty(v: Variable) -> Condition:
-        return Condition.not_equal(v, "")
-
-    @staticmethod
-    def is_set(v: Variable) -> Condition:
         c = Condition()
         c.v = v
-        c.t = Condition.Type.SET
+        c.t = Condition.Type.NOT_EMPTY
         return c
 
     @staticmethod
@@ -251,9 +239,11 @@ class Condition:
                     return self.v.value != self.s.value
                 else:
                     return self.v.value != self.s
-            case self.Type.SET:
+            case self.Type.NOT_EMPTY:
                 return bool(self.v.value)
             case self.Type.FULL_MATCH:
+                if self.v.value is None:
+                    return False
                 return re.fullmatch(self.s, self.v.value) is not None
             case self.Type.AND:
                 return self.a.eval() and self.b.eval()
@@ -281,7 +271,7 @@ class Condition:
                     return f"(${self.v.name} != ${self.s.name})"
                 else:
                     return f"(${self.v.name} != '{self.s}')"
-            case self.Type.SET:
+            case self.Type.NOT_EMPTY:
                 self.v.check_name()
                 return f"(${self.v.name})"
             case self.Type.FULL_MATCH:
@@ -302,6 +292,7 @@ class VariableStore(TypedStore):
     # builtins from https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
     # NOTE: this list is incomplete
     BUILTINS = [
+        "CI",
         "CI_DEFAULT_BRANCH",
         "CI_PIPELINE_SOURCE",
         "CI_PIPELINE_TRIGGERED",
@@ -325,7 +316,8 @@ class VariableStore(TypedStore):
     ]
 
     def __init__(self):
-        self.CI_DEFAULT_BRANCH = Variable("main")
+        self.CI = Variable("true")
+        self.CI_DEFAULT_BRANCH = Variable()
         self.CI_PIPELINE_SOURCE = Variable()
         self.CI_PIPELINE_TRIGGERED = Variable()
         self.CI_PIPELINE_URL = Variable()

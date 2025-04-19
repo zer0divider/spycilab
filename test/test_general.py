@@ -131,7 +131,7 @@ def test_variable_store():
         assert v is not None
         assert v.name == b
     assert e.to_yaml() == {"MY_VARIABLE": "hi"}
-    assert e.CI_DEFAULT_BRANCH.value == "main"
+    assert e.CI_DEFAULT_BRANCH.value is None
 
 def test_rule_set_comparison():
     v = Variable("test")
