@@ -71,17 +71,17 @@ def test_variable():
     # variable with invalid value
     try:
         v = Variable(default_value="C", options=["A", "B"])
-        assert False, "invalid option is not recognized, should have thrown"
-    except ValueError as _:
-        pass
+        assert False, "should have thrown"
+    except ValueError as e:
+        assert "default value must be one of" in str(e).lower()
     try:
         # when passing invalid value from commandline (same as from config)
         var_store = VariableStore()
         var_store.v = Variable(default_value="A", options=["A", "B"])
         Pipeline(jobs=JobStore(), stages=StageStore(), variables=var_store).main(cmd_args=["list", "-v", "v=C"])
-        assert False, "invalid option is not recognized, should have thrown"
+        assert False, "should have thrown"
     except ValueError as e:
-        assert "invalid option" in str(e).lower()
+        assert "invalid value" in str(e).lower()
 
     # variable with override
     v = Variable("B", description="not final", yaml_override={"description": "realdeal", "hi": "there"})
@@ -131,7 +131,7 @@ def test_variable_store():
         assert v is not None
         assert v.name == b
     assert e.to_yaml() == {"MY_VARIABLE": "hi"}
-    assert e.CI_DEFAULT_BRANCH.value == "main"
+    assert e.CI_DEFAULT_BRANCH.value is None
 
 def test_rule_set_comparison():
     v = Variable("test")

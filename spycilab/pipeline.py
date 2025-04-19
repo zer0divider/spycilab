@@ -5,6 +5,7 @@
 
 import argparse
 import sys
+import os
 import subprocess
 
 from .overridable_yaml_object import OverridableYamlObject
@@ -68,12 +69,15 @@ class Pipeline(OverridableYamlObject):
     def add_variable_argument(sub_parser):
         sub_parser.add_argument("-v", required=False, action="append", help="set a variable (-v VAR=VALUE)")
 
-    @staticmethod
-    def add_no_config_flag(sub_parser):
-        sub_parser.add_argument("--no-config", required=False, action="store_true",
-                                help="Do not load config from from files (e.g. .spycilab.yaml).")
 
-    def check_variables(self, variables):
+    @staticmethod
+    def add_env_flags(sub_parser):
+        sub_parser.add_argument("--no-input-env", required=False, action="store_true",
+                                help="Do not set internal variables from system environment.")
+        sub_parser.add_argument("--no-forward-env", required=False, action="store_true",
+                                help="Do not forward variable values to system environment.")
+
+    def process_variables_from_args(self, variables):
         if variables is not None:
             for v in variables:
                 equal_sign_i = v.find("=")
@@ -84,13 +88,21 @@ class Pipeline(OverridableYamlObject):
                     # check is an actual Variable
                     if not isinstance(current_var, Variable):
                         raise RuntimeError(f"No such variable '{var_name}'")
-                    # check value if var has options
-                    if current_var.options is not None:
-                        if var_value not in current_var.options:
-                            raise ValueError(f"Invalid option '{var_value}' for variable '{var_name}'")
                     current_var.value = var_value
                 else:
                     raise RuntimeError(f"Invalid expression for variable mapping '{v}'. Expected VAR=VALUE")
+
+    def process_variables_from_env(self):
+        for v in self.vars.all():
+            env_v = os.environ.get(v.name)
+            if env_v is not None and isinstance(env_v, str):
+                v.value = env_v
+
+    def write_variables_to_env(self):
+        # add to environment
+        for v in self.vars.all():
+            if v.value is not None:
+                os.environ[v.name] = v.value
 
     def check_workflow(self):
         # check workflow
@@ -132,6 +144,12 @@ class Pipeline(OverridableYamlObject):
     def main(self, cmd_args: list[str] | None = None):
         arg_parser = argparse.ArgumentParser(description="This is the pipeline generator and runner.")
         sub_parsers = arg_parser.add_subparsers(required=True, title="subcommands")
+        arg_parser.add_argument("--no-input-env", required=False, action="store_true",
+                                help="Do not set internal variables from system environment.")
+        arg_parser.add_argument("--no-forward-env", required=False, action="store_true",
+                                help="Do not forward variable values to system environment.")
+        arg_parser.add_argument("--no-config", required=False, action="store_true",
+                                help="Do not load config from files (e.g. .spycilab.yaml).")
         # run sub command
         run_arg_parser = sub_parsers.add_parser("run", description="Run a single job from the pipeline.")
         run_arg_parser.add_argument("job", help="internal name of the job to run")
@@ -140,20 +158,20 @@ class Pipeline(OverridableYamlObject):
                                     help="Starts a subprocess which runs the job with its specified run prefix.")
         run_arg_parser.set_defaults(command="run")
         self.add_variable_argument(run_arg_parser)
-        self.add_no_config_flag(run_arg_parser)
         # generate sub command
         gen_arg_parser = sub_parsers.add_parser("generate", description="Generate GitLab-CI YAML file.")
         gen_arg_parser.add_argument("--output", required=False,
                                     help="File to write generated YAML to. This option overrides setting in configuration file.")
         gen_arg_parser.set_defaults(command="generate")
-        self.add_no_config_flag(gen_arg_parser)
         # list sub command
         list_arg_parser = sub_parsers.add_parser("list", description="List all pipeline jobs")
         list_arg_parser.set_defaults(command="list")
         list_arg_parser.add_argument("--all", action="store_true", help="Show all jobs, even ones disabled by rules.")
         self.add_variable_argument(list_arg_parser)
-        self.add_no_config_flag(list_arg_parser)
         self.args = arg_parser.parse_args(cmd_args)
+
+        if not self.args.no_input_env:
+            self.process_variables_from_env()
 
         if not self.args.no_config:
             for c in self.config_files:
@@ -162,7 +180,12 @@ class Pipeline(OverridableYamlObject):
         self.check_jobs()
 
         if self.args.__dict__.get("v"):
-            self.check_variables(self.args.v)
+            self.process_variables_from_args(self.args.v)
+
+        self.vars.check_all()
+
+        if not self.args.no_forward_env:
+            self.write_variables_to_env()
 
         self.check_workflow()
 
@@ -184,14 +207,12 @@ class Pipeline(OverridableYamlObject):
                     if not j.config.run_prefix:
                         print(f"job '{self.args.job}' doesn't have any prefix, running normally ...")
                     else:
-                        args_without_prefix_flag = []
+                        full_prefix_cmd = j.config.run_prefix
                         for a in sys.argv:
                             if a != prefix_flag_name:
-                                args_without_prefix_flag.append(a)
-                        full_prefix_cmd = j.config.run_prefix.split(" ") + args_without_prefix_flag
-                        full_prefix_cmd_joined = " ".join(full_prefix_cmd)
-                        print(f"Running with prefix: {full_prefix_cmd_joined}")
-                        exit(subprocess.run(full_prefix_cmd).returncode)
+                                full_prefix_cmd += " " + a
+                        print(f"Running with prefix: {full_prefix_cmd}")
+                        exit(subprocess.run(full_prefix_cmd, shell=True).returncode)
                 exit(self.run(j))
             case _:
                 arg_parser.print_help()
@@ -254,11 +275,8 @@ class Pipeline(OverridableYamlObject):
         return ret
 
     def to_yaml_impl(self):
-        args = ["--no-config"]
         # collect variables as arguments
         vars_yaml = self.vars.to_yaml()
-        for e in self.vars.all():
-            args.append('-v ' + e.name + '="${' + e.name + '}"')
         p = {}
         # workflow
         if self.workflow is not None:
@@ -278,7 +296,7 @@ class Pipeline(OverridableYamlObject):
 
         # job base
         p[".job_base"] = {
-            "script": "${JOB_RUN_PREFIX} " + self.run_script + " run ${INTERNAL_JOB_NAME} " + " ".join(args)
+            "script": "${JOB_RUN_PREFIX} " + self.run_script + " run ${INTERNAL_JOB_NAME}"
         }
 
         # add jobs

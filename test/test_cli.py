@@ -45,7 +45,7 @@ def test_generate(pipeline_yaml):
     assert p_yaml["stages"] == ["Testing"]
 
     # jobs
-    assert p_yaml[".job_base"]["script"].startswith("${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME} --no-config")
+    assert p_yaml[".job_base"]["script"] == ("${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME}")
     assert p_yaml["Unit Tests"]["stage"] == "Testing"
     assert p_yaml["Unit Tests"]["extends"] == ".job_base"
     assert p_yaml["Unit Tests"]["variables"]["INTERNAL_JOB_NAME"] == "test"
@@ -61,6 +61,11 @@ def test_generate(pipeline_yaml):
     assert p_yaml["workflow"]["rules"][1]["if"] == "($CI_COMMIT_TAG =~ /^skip-.*$/)"
     assert p_yaml["workflow"]["rules"][1]["when"] == "never"
 
+@pytest.fixture
+def env_var():
+    os.environ["test_variable"] = "set from env"
+    yield os.environ["test_variable"]
+    del os.environ["test_variable"]
 
 def test_run():
     # job succeeds
@@ -75,6 +80,33 @@ def test_run():
     output = r.stdout.decode()
     assert "Job FAILED" in output
     assert r.returncode == 1
+
+def test_run_with_env(env_var):
+    # variable from environment
+    r = subprocess.run([pipeline_script, "run", "test"], check=True, capture_output=True)
+    output = r.stdout.decode()
+    assert f"testing stuff (var='{env_var}')..." in output
+
+    # env vars are forwarded to subprocesses in pipeline (should be built-in feature of python)
+    r = subprocess.run([pipeline_script, "run", "subprocess"], check=True, capture_output=True)
+    output = r.stdout.decode()
+    assert f"from subprocess: {env_var}" in output
+
+    # vars set via commandline are forwarded to environment
+    r = subprocess.run([pipeline_script, "run", "subprocess", "-v", "test_variable=from_cmdline"], check=True, capture_output=True)
+    output = r.stdout.decode()
+    assert f"from subprocess: from_cmdline" in output
+
+    # --no-input-env (environment is ignored as input)
+    r = subprocess.run([pipeline_script, "--no-input-env", "run", "test"], check=True, capture_output=True)
+    output = r.stdout.decode()
+    assert f"testing stuff (var='my_default')..." in output
+
+    # --no-forward-env (vars set via commandline are not forwarded to environment)
+    r = subprocess.run([pipeline_script, "--no-forward-env", "run", "subprocess", "-v", "test_variable=not_forwarded"], check=True, capture_output=True)
+    output = r.stdout.decode()
+    assert f"from subprocess: {env_var}" in output
+    assert "not_forwarded" not in output
 
 def test_run_with_config(pipeline_config):
     # config loaded
@@ -113,20 +145,31 @@ def pipeline_list(additional_params:list[str]|None=None) -> str:
     r = subprocess.run(params, check=True, capture_output=True)
     return r.stdout.decode()
 
-
 def test_list_simple():
     # one job deactivated
     o = pipeline_list()
     assert "Testing:\n  - Always Fails (fail): always" in o
     assert "Unit Tests (test): always" not in o
 
+test_list_with_var_expected = """\
+Testing:
+  - Always Fails (fail): always
+  - Unit Tests (test): always
+"""
 
 def test_list_with_var():
     o = pipeline_list(["-v", "test_variable=A"])
-    assert "Testing:\n  - Always Fails (fail): always\n  - Unit Tests (test): always" in o
+    assert test_list_with_var_expected in o
 
+test_list_all_expected = """\
+Testing:
+  - Always Fails (fail): always
+  - Prefix Job (prefix): never
+  - Subprocess Job (subprocess): never
+  - Unit Tests (test): never
+"""
 
 def test_list_all():
     # all jobs
     o = pipeline_list(["--all"])
-    assert "Testing:\n  - Always Fails (fail): always\n  - Prefix Job (prefix): never\n  - Unit Tests (test): never" in o
+    assert test_list_all_expected in o
