@@ -348,10 +348,10 @@ class VariableStore(TypedStore):
         return self.pipeline_source_is(PipelineSource.merge_request_event)
 
     def is_tag(self) -> Condition:
-        return self.CI_COMMIT_TAG.is_set()
+        return self.CI_COMMIT_TAG.is_not_empty()
 
     def is_branch(self) -> Condition:
-        return self.CI_COMMIT_BRANCH.is_set()
+        return self.CI_COMMIT_BRANCH.is_not_empty()
 
     def update_variable_names(self):
         """
