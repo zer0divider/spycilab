@@ -224,7 +224,11 @@ class Pipeline(OverridableYamlObject):
         print(f"CI Variables :")
         for v in self.vars.all():
             if v.show:
-                print(f"  {v.name}: '{v.value}'")
+                print(f"  {v.name}: ", end="")
+                if v.value is None:
+                    print(f"<NOT DEFINED>")
+                else:
+                    print(f"'{v.value}'")
         print("  ... (some may be hidden)\n")
 
     def list(self):
