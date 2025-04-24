@@ -45,16 +45,12 @@ def test_generate(pipeline_yaml):
     assert p_yaml["stages"] == ["Testing"]
 
     # jobs
-    assert p_yaml[".job_base"]["script"] == ("${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME}")
     assert p_yaml["Unit Tests"]["stage"] == "Testing"
-    assert p_yaml["Unit Tests"]["extends"] == ".job_base"
-    assert p_yaml["Unit Tests"]["variables"]["INTERNAL_JOB_NAME"] == "test"
+    assert p_yaml["Unit Tests"]["script"] == "./pipeline.py run test"
     assert p_yaml["Unit Tests"]["rules"][0]["if"] == "(($test_variable == 'A') || ($test_variable == 'B'))"
     assert p_yaml["Unit Tests"]["rules"][0]["when"] == "always"
 
     assert p_yaml["Always Fails"]["stage"] == "Testing"
-    assert p_yaml["Always Fails"]["extends"] == ".job_base"
-    assert p_yaml["Always Fails"]["variables"]["INTERNAL_JOB_NAME"] == "fail"
 
     # workflow
     assert p_yaml["workflow"]["rules"][0]["if"] == "($CI_COMMIT_BRANCH == 'master')"

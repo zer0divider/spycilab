@@ -12,7 +12,6 @@ def test_simple_job():
 
     j_yaml = j.to_yaml()
     assert j_yaml["stage"] == "test stage"
-    assert j_yaml["extends"] == ".job_base"
 
 def test_complex_job():
     s = Stage("test stage")
@@ -41,9 +40,7 @@ def test_complex_job():
     assert j_yaml["artifacts"] == {"paths": ["out.txt"], "when": "on_success"}
     assert j_yaml["needs"] == [ "first", { "job": "second", "artifacts": False} ]
     assert j_yaml["tags"] == [ "my_tag" ]
-    assert len(j_yaml["variables"]) == 2
-    assert j_yaml["variables"]["JOB_RUN_PREFIX"] == "PREFIX"
-    assert j_yaml["variables"]["INTERNAL_JOB_NAME"] == "j"
+    assert j_yaml["script"] == "PREFIX ./pipeline.py run j"
     assert j_yaml["additional_keyword"] == [ "test1", "test2" ]
 
 def test_needs_divergent_rules():

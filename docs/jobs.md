@@ -125,16 +125,8 @@ jobs.docker_job = Job("Docker Job", JobConfig(run_prefix="docker run my_image"))
 ```
 generates
 ```yaml
-.base_job:
-  script: ${JOB_RUN_PREFIX} ./pipeline.py ... 
 Docker Job:
-  extends: [ .base_job ]
-  variables:
-    JOB_RUN_PREFIX: "docker run my_image"
-```
-So when the job runs in the pipeline it executes:
-```bash
-docker run my_image ./pipeline.py ...
+  script: docker run my_image ./pipeline.py run docker_job
 ```
 
 ## Additional Keywords

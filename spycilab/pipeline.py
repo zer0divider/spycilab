@@ -298,11 +298,6 @@ class Pipeline(OverridableYamlObject):
         # stages
         p["stages"] = self.stages.to_yaml()
 
-        # job base
-        p[".job_base"] = {
-            "script": "${JOB_RUN_PREFIX} " + self.run_script + " run ${INTERNAL_JOB_NAME}"
-        }
-
         # add jobs
         zero_width_space = "\u200B"
         stage_orderings = {}
@@ -320,4 +315,6 @@ class Pipeline(OverridableYamlObject):
                 name = j.name
 
             p[name] = j.to_yaml()
+            if not p[name].get("script"):
+                p[name]["script"] = self.run_script + " run ${INTERNAL_JOB_NAME}"
         return p

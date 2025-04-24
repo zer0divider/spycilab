@@ -131,6 +131,7 @@ class Job(OverridableYamlObject):
         self.internal_name = None
         self.name = name
         self.config = config
+        self.run_script = "./pipeline.py"
 
         # check artifacts
         if self.config.artifacts is not None:
@@ -165,15 +166,13 @@ class Job(OverridableYamlObject):
         if self.config.stage is None:
             raise RuntimeError(f"Job '{self.name}' has no stage.")
 
+        prefix = ""
+        if self.config.run_prefix:
+            prefix = self.config.run_prefix + " "
         y = {
             "stage": self.config.stage.name,
-            "extends": ".job_base",
-            "variables": {
-                "INTERNAL_JOB_NAME": self.internal_name
-            }
+            "script": f"{prefix}{self.run_script} run {self.internal_name}"
         }
-        if self.config.run_prefix is not None:
-            y["variables"]["JOB_RUN_PREFIX"] = self.config.run_prefix
         if self.config.rules is not None:
             y["rules"] = [r.to_yaml() for r in self.config.rules]
         if self.config.artifacts is not None:

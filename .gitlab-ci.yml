@@ -4,18 +4,15 @@
 
 workflow:
   rules:
-  - if: (($CI_PIPELINE_SOURCE == 'push') && ($CI_OPEN_MERGE_REQUESTS))
+  - if: (($CI_PIPELINE_SOURCE == 'push') && ($CI_OPEN_MERGE_REQUESTS != null && $CI_OPEN_MERGE_REQUESTS
+      != ''))
     when: never
   - when: always
 stages:
 - Testing
-.job_base:
-  script: ${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME}
 Unit Tests:
   stage: Testing
-  extends: .job_base
-  variables:
-    INTERNAL_JOB_NAME: unit_tests
+  script: ./pipeline.py run unit_tests
   artifacts:
     reports:
       junit: pyunit.xml
