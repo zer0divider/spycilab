@@ -17,7 +17,8 @@ Test Job:
 Other comparision functions are:
 - `Condition.not_equal(var, other)` variable value is not equal to other variable or string
 - `Condition.is_empty(var)` variable value is empty string (**note**: this is different from a variable not set)
-- `Condition.is_not_empty(var)` variable value is set and not the empty string (in yaml this is just the variable itself, e.g. `if: $CI_COMMIT_TAG`)
+- `Condition.defined_and_not_empty(var)` variable value is defined and not the empty string
+- `Condition.not_defined_or_empty(var)` variable value is not defined or the empty string
 - `Condition.is_true(bool_var)` bool variable value is true (`yes`)
 - `Condition.is_false(bool_var)` bool variable value is false (`no`)
 - `Condition.full_match(var, pattern)` variable fully matches a given regular expression
@@ -26,7 +27,7 @@ Other comparision functions are:
 Use the overloaded `&` and `|` operator to combine two conditions with a logical *and* / *or*.
 ```python
 Condition.equal(variables.var_a, "hello") & Condition.equal(variables.var_b, "bye") # if: $var_a == 'hello' && $var_b == 'bye'
-Condition.is_not_empty(variables.var_a) | Condition.is_true(variables.var_c) # if: $var_a || $var_b == 'yes'
+Condition.defined_and_not_empty(variables.var_a) | Condition.is_true(variables.var_c) # if: ($var_a != null && $var_a != '') || $var_b == 'yes'
 ```
 
 ## Conditions from Variable

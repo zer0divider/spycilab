@@ -54,9 +54,9 @@ def test_simple():
 
     # is not empty
     var_a.value = "not_empty"
-    c = Condition.is_not_empty(var_a)
-    cv = var_a.is_not_empty()
-    assert c.to_yaml() == "($a)"
+    c = Condition.defined_and_not_empty(var_a)
+    cv = var_a.defined_and_not_empty()
+    assert c.to_yaml() == "($a != null && $a != '')"
     assert cv.to_yaml() == c.to_yaml()
     assert c.eval() == True
     assert cv.eval() == c.eval()

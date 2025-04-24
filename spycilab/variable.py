@@ -28,7 +28,7 @@ class Variable(OverridableYamlObject):
     This class represents a CI/CD variable.
     """
 
-    def __init__(self, default_value: str|None = None, description=None, options: None | list[str] = None,
+    def __init__(self, default_value: str | None = None, description=None, options: None | list[str] = None,
                  yaml_override: dict | None = None, show=False):
         """
         :param default_value:
@@ -55,7 +55,8 @@ class Variable(OverridableYamlObject):
     def check_value(self):
         if self.value is not None and self.options is not None:
             if self.value not in self.options:
-                raise ValueError(f"Invalid value '{self.value}' for variable '{self.name}', valid options are {self.options}")
+                raise ValueError(
+                    f"Invalid value '{self.value}' for variable '{self.name}', valid options are {self.options}")
 
     def __str__(self) -> str:
         if self.value is None:
@@ -71,8 +72,11 @@ class Variable(OverridableYamlObject):
     def not_equal_to(self, other: str | Variable) -> Condition:
         return Condition.not_equal(self, other)
 
-    def is_not_empty(self) -> Condition:
-        return Condition.is_not_empty(self)
+    def defined_and_not_empty(self) -> Condition:
+        return Condition.defined_and_not_empty(self)
+
+    def not_defined_or_empty(self) -> Condition:
+        return Condition.not_defined_or_empty(self)
 
     def full_match(self, pattern: str, examples_match: list[str] | None = None,
                    examples_not_match: list[str] | None = None) -> Condition:
@@ -141,9 +145,10 @@ class Condition:
         EQUAL = 0
         NOT_EQUAL = 1
         FULL_MATCH = 2
-        NOT_EMPTY = 3
-        AND = 4
-        OR = 5
+        DEFINED_AND_NOT_EMPTY = 3
+        NOT_DEFINED_OR_EMPTY = 4
+        AND = 5
+        OR = 6
 
     def __init__(self, when: str = "always"):
         self.a = None  # left operand (for boolean Condition)
@@ -169,10 +174,17 @@ class Condition:
         return c
 
     @staticmethod
-    def is_not_empty(v: Variable) -> Condition:
+    def defined_and_not_empty(v: Variable) -> Condition:
         c = Condition()
         c.v = v
-        c.t = Condition.Type.NOT_EMPTY
+        c.t = Condition.Type.DEFINED_AND_NOT_EMPTY
+        return c
+
+    @staticmethod
+    def not_defined_or_empty(v: Variable) -> Condition:
+        c = Condition()
+        c.v = v
+        c.t = Condition.Type.NOT_DEFINED_OR_EMPTY
         return c
 
     @staticmethod
@@ -239,8 +251,10 @@ class Condition:
                     return self.v.value != self.s.value
                 else:
                     return self.v.value != self.s
-            case self.Type.NOT_EMPTY:
+            case self.Type.DEFINED_AND_NOT_EMPTY:
                 return bool(self.v.value)
+            case self.Type.NOT_DEFINED_OR_EMPTY:
+                return not bool(self.v.value)
             case self.Type.FULL_MATCH:
                 if self.v.value is None:
                     return False
@@ -271,9 +285,14 @@ class Condition:
                     return f"(${self.v.name} != ${self.s.name})"
                 else:
                     return f"(${self.v.name} != '{self.s}')"
-            case self.Type.NOT_EMPTY:
+            case self.Type.DEFINED_AND_NOT_EMPTY:
                 self.v.check_name()
-                return f"(${self.v.name})"
+                # could simply use ($VARIABLE) however there seems to be a bug when variable is at first position in chained expression
+                # (https://git.zentrale.skysails.de/kiting/software/linux-os/-/pipelines/64158)
+                return f"(${self.v.name} != null && ${self.v.name} != '')"
+            case self.Type.NOT_DEFINED_OR_EMPTY:
+                self.v.check_name()
+                return f"(${self.v.name} == null || ${self.v.name} == '')"
             case self.Type.FULL_MATCH:
                 self.v.check_name()
                 return f"(${self.v.name} =~ /^{self.s}$/)"
@@ -348,10 +367,10 @@ class VariableStore(TypedStore):
         return self.pipeline_source_is(PipelineSource.merge_request_event)
 
     def is_tag(self) -> Condition:
-        return self.CI_COMMIT_TAG.is_not_empty()
+        return self.CI_COMMIT_TAG.defined_and_not_empty()
 
     def is_branch(self) -> Condition:
-        return self.CI_COMMIT_BRANCH.is_not_empty()
+        return self.CI_COMMIT_BRANCH.defined_and_not_empty()
 
     def update_variable_names(self):
         """
