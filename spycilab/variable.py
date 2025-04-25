@@ -331,7 +331,8 @@ class VariableStore(TypedStore):
         "CI_COMMIT_SHA",
         "CI_COMMIT_TAG",
         "CI_JOB_NAME",
-        "CI_JOB_TOKEN"
+        "CI_JOB_TOKEN",
+        "CI_JOB_URL"
     ]
 
     def __init__(self):
