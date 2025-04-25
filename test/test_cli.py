@@ -123,7 +123,8 @@ def test_run_with_prefix():
     r = subprocess.run([pipeline_script, "run", "--with-prefix", "prefix" ], check=True, capture_output=True, cwd=pipeline_dir)
     stdout = r.stdout.decode().lower()
     stderr = r.stderr.decode().lower()
-    assert "running (with prefix): time --portability ./pipeline.py run prefix" in stdout
+    assert "running (with prefix): echo $test_variable && time --portability ./pipeline.py run prefix" in stdout
+    assert "my_default" in stdout
     assert "warning" not in stdout
     assert "warning" not in stderr
     assert "error" not in stdout

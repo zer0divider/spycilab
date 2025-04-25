@@ -18,7 +18,7 @@ jobs.test = Job("Unit Tests", JobConfig(stage=stages.test, work=lambda: print(f"
 
 jobs.fail = Job("Always Fails", JobConfig(stage=stages.test, work=lambda: print("fail") or False))
 
-jobs.prefix = Job("Prefix Job", JobConfig(stage=stages.test, rules=[Rule(when=When.never)], run_prefix="time --portability", work=lambda: time.sleep(1) or True))
+jobs.prefix = Job("Prefix Job", JobConfig(stage=stages.test, rules=[Rule(when=When.never)], run_prefix="echo $test_variable && time --portability", work=lambda: time.sleep(1) or True))
 
 jobs.subprocess = Job("Subprocess Job", JobConfig(stage=stages.test,
                                                   work=lambda: subprocess.run(f"echo \"from subprocess: ${variables.test_variable.name}\"", shell=True).returncode == 0,

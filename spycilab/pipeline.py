@@ -209,7 +209,9 @@ class Pipeline(OverridableYamlObject):
                     else:
                         full_run_cmd = j.get_script()
                         print(f"Running (with prefix): {full_run_cmd}")
-                        exit(subprocess.run(full_run_cmd, shell=True, env={"SPYCILAB_WITH_PREFIX": "true"}).returncode)
+                        new_env = os.environ.copy()
+                        new_env["SPYCILAB_WITH_PREFIX"] = "true"
+                        exit(subprocess.run(full_run_cmd, shell=True, env=new_env).returncode)
                 elif j.config.run_prefix and not os.environ.get("SPYCILAB_WITH_PREFIX") == "true":
                     print(f"Warning: job '{self.args.job}' has a run prefix ({j.config.run_prefix}), consider running with flag {self.prefix_flag_name}.")
 
