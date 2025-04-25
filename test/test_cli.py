@@ -120,10 +120,14 @@ def test_run_with_local_config(pipeline_config, pipeline_local_config):
 
 def test_run_with_prefix():
     # job succeeds
-    r = subprocess.run([pipeline_script, "run", "--with-prefix", "prefix" ], check=True, capture_output=True)
-    stdout = r.stdout.decode()
-    stderr = r.stderr.decode()
-    assert "Running with prefix: time --portability" in stdout
+    r = subprocess.run([pipeline_script, "run", "--with-prefix", "prefix" ], check=True, capture_output=True, cwd=pipeline_dir)
+    stdout = r.stdout.decode().lower()
+    stderr = r.stderr.decode().lower()
+    assert "running (with prefix): time --portability ./pipeline.py run prefix" in stdout
+    assert "warning" not in stdout
+    assert "warning" not in stderr
+    assert "error" not in stdout
+    assert "error" not in stderr
     # check output from command 'time'
     assert "real 1." in stderr # job runs for roughly 1 second
     assert "user" in stderr

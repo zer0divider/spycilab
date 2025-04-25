@@ -159,6 +159,12 @@ class Job(OverridableYamlObject):
             print("Nothing to do.")
             return 0
 
+    def get_script(self):
+        prefix = ""
+        if self.config.run_prefix:
+            prefix = self.config.run_prefix + " "
+        return f"{prefix}{self.run_script}"
+
     def to_yaml_impl(self):
         if self.internal_name is None:
             raise RuntimeError(f"Job '{self.name}' has no internal name.")
@@ -169,13 +175,16 @@ class Job(OverridableYamlObject):
         if self.config.stage is None:
             raise RuntimeError(f"Job '{self.name}' has no stage.")
 
-        prefix = ""
+        variables = {}
         if self.config.run_prefix:
-            prefix = self.config.run_prefix + " "
+            variables = {"SPYCILAB_RUN_PREFIX": "true"}
+
         y = {
             "stage": self.config.stage.name,
-            "script": f"{prefix}{self.run_script}"
+            "script": self.get_script()
         }
+        if variables:
+            y["variables"] = variables
         if self.config.rules is not None:
             y["rules"] = [r.to_yaml() for r in self.config.rules]
         if self.config.artifacts is not None:

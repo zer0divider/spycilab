@@ -27,6 +27,7 @@ class Pipeline(OverridableYamlObject):
         else:
             self.vars = variables
 
+        self.prefix_flag_name = "--with-prefix"
         self.vars.update_variable_names()
         self.workflow = workflow
         self.jobs = jobs
@@ -152,8 +153,7 @@ class Pipeline(OverridableYamlObject):
         # run sub command
         run_arg_parser = sub_parsers.add_parser("run", description="Run a single job from the pipeline.")
         run_arg_parser.add_argument("job", help="internal name of the job to run")
-        prefix_flag_name = "--with-prefix"
-        run_arg_parser.add_argument(prefix_flag_name, action="store_true",
+        run_arg_parser.add_argument(self.prefix_flag_name, action="store_true",
                                     help="Starts a subprocess which runs the job with its specified run prefix.")
         run_arg_parser.set_defaults(command="run")
         self.add_variable_argument(run_arg_parser)
@@ -207,12 +207,12 @@ class Pipeline(OverridableYamlObject):
                     if not j.config.run_prefix:
                         print(f"job '{self.args.job}' doesn't have any prefix, running normally ...")
                     else:
-                        full_prefix_cmd = j.config.run_prefix
-                        for a in sys.argv:
-                            if a != prefix_flag_name:
-                                full_prefix_cmd += " " + a
-                        print(f"Running with prefix: {full_prefix_cmd}")
-                        exit(subprocess.run(full_prefix_cmd, shell=True).returncode)
+                        full_run_cmd = j.get_script()
+                        print(f"Running (with prefix): {full_run_cmd}")
+                        exit(subprocess.run(full_run_cmd, shell=True, env={"SPYCILAB_WITH_PREFIX": "true"}).returncode)
+                elif j.config.run_prefix and not os.environ.get("SPYCILAB_WITH_PREFIX") == "true":
+                    print(f"Warning: job '{self.args.job}' has a run prefix ({j.config.run_prefix}), consider running with flag {self.prefix_flag_name}.")
+
                 exit(self.run(j))
             case _:
                 arg_parser.print_help()
