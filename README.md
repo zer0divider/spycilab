@@ -33,8 +33,6 @@ When this script runs it will generate a pipeline (`.gitlab-ci.yml`) with two st
 stages:
 - Building Stuff
 - Testing Stuff
-.job_base:
-  script: 
 Build My App:
   stage: Building Stuff
   script: ./pipeline.py run build_app
