@@ -131,7 +131,7 @@ class Job(OverridableYamlObject):
         self.internal_name = None
         self.name = name
         self.config = config
-        self.run_script = "./pipeline.py"
+        self.run_script = None # set by JobStore
 
         # check artifacts
         if self.config.artifacts is not None:
@@ -163,6 +163,9 @@ class Job(OverridableYamlObject):
         if self.internal_name is None:
             raise RuntimeError(f"Job '{self.name}' has no internal name.")
 
+        if self.run_script is None:
+            raise RuntimeError(f"Job '{self.name}' has no run script.")
+
         if self.config.stage is None:
             raise RuntimeError(f"Job '{self.name}' has no stage.")
 
@@ -171,7 +174,7 @@ class Job(OverridableYamlObject):
             prefix = self.config.run_prefix + " "
         y = {
             "stage": self.config.stage.name,
-            "script": f"{prefix}{self.run_script} run {self.internal_name}"
+            "script": f"{prefix}{self.run_script}"
         }
         if self.config.rules is not None:
             y["rules"] = [r.to_yaml() for r in self.config.rules]
@@ -204,13 +207,14 @@ class Job(OverridableYamlObject):
 
 
 class JobStore(TypedStore[Job]):
-    def update_jobs(self):
+    def update_jobs(self, run_script:str):
         """
         Make sure jobs know their own name
         :return:
         """
         for k, v in self.__dict__.items():
             v.internal_name = k
+            v.run_script = f"{run_script} run {k}"
 
 
 def job_work(job:Job):

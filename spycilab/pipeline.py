@@ -30,10 +30,10 @@ class Pipeline(OverridableYamlObject):
         self.vars.update_variable_names()
         self.workflow = workflow
         self.jobs = jobs
-        self.jobs.update_jobs()
         self.pipeline_enabled = True
         self.config = None
         self.run_script = "./pipeline.py"
+        self.jobs.update_jobs(self.run_script)
         self.output = ".gitlab-ci.yml"
         # try loading config files in that order
         self.config_files = [".spycilab.yaml", ".spycilab.yml", ".local.spycilab.yaml", ".local.spycilab.yml"]
@@ -135,7 +135,6 @@ class Pipeline(OverridableYamlObject):
     def check_jobs(self):
         all_jobs = list(self.jobs.all())
         for ji, j in enumerate(all_jobs):
-            cmp = j.name
             for other_ji in range(ji + 1, len(all_jobs)):
                 if j.name == all_jobs[other_ji].name:
                     raise RuntimeError(
@@ -177,6 +176,7 @@ class Pipeline(OverridableYamlObject):
             for c in self.config_files:
                 self.load_config(c)
 
+        self.jobs.update_jobs(self.run_script)
         self.check_jobs()
 
         if self.args.__dict__.get("v"):
@@ -315,6 +315,4 @@ class Pipeline(OverridableYamlObject):
                 name = j.name
 
             p[name] = j.to_yaml()
-            if not p[name].get("script"):
-                p[name]["script"] = self.run_script + " run ${INTERNAL_JOB_NAME}"
         return p
