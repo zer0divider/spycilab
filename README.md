@@ -33,18 +33,12 @@ When this script runs it will generate a pipeline (`.gitlab-ci.yml`) with two st
 stages:
 - Building Stuff
 - Testing Stuff
-.job_base:
-  script: ${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME} ...
 Build My App:
   stage: Building Stuff
-  extends: .job_base
-  variables:
-    INTERNAL_JOB_NAME: build_app
+  script: ./pipeline.py run build_app
 Test My App:
   stage: Testing Stuff
-  extends: .job_base
-  variables:
-    INTERNAL_JOB_NAME: test_app
+  script: ./pipeline.py run test_app
 ```
 
 ## Basic Commandline Arguments

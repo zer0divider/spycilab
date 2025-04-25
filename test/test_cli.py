@@ -45,16 +45,12 @@ def test_generate(pipeline_yaml):
     assert p_yaml["stages"] == ["Testing"]
 
     # jobs
-    assert p_yaml[".job_base"]["script"] == ("${JOB_RUN_PREFIX} ./pipeline.py run ${INTERNAL_JOB_NAME}")
     assert p_yaml["Unit Tests"]["stage"] == "Testing"
-    assert p_yaml["Unit Tests"]["extends"] == ".job_base"
-    assert p_yaml["Unit Tests"]["variables"]["INTERNAL_JOB_NAME"] == "test"
+    assert p_yaml["Unit Tests"]["script"] == "./pipeline.py run test"
     assert p_yaml["Unit Tests"]["rules"][0]["if"] == "(($test_variable == 'A') || ($test_variable == 'B'))"
     assert p_yaml["Unit Tests"]["rules"][0]["when"] == "always"
 
     assert p_yaml["Always Fails"]["stage"] == "Testing"
-    assert p_yaml["Always Fails"]["extends"] == ".job_base"
-    assert p_yaml["Always Fails"]["variables"]["INTERNAL_JOB_NAME"] == "fail"
 
     # workflow
     assert p_yaml["workflow"]["rules"][0]["if"] == "($CI_COMMIT_BRANCH == 'master')"
@@ -124,10 +120,15 @@ def test_run_with_local_config(pipeline_config, pipeline_local_config):
 
 def test_run_with_prefix():
     # job succeeds
-    r = subprocess.run([pipeline_script, "run", "--with-prefix", "prefix" ], check=True, capture_output=True)
-    stdout = r.stdout.decode()
-    stderr = r.stderr.decode()
-    assert "Running with prefix: time --portability" in stdout
+    r = subprocess.run([pipeline_script, "run", "--with-prefix", "prefix" ], check=True, capture_output=True, cwd=pipeline_dir)
+    stdout = r.stdout.decode().lower()
+    stderr = r.stderr.decode().lower()
+    assert "running (with prefix): echo $test_variable && time --portability ./pipeline.py run prefix" in stdout
+    assert "my_default" in stdout
+    assert "warning" not in stdout
+    assert "warning" not in stderr
+    assert "error" not in stdout
+    assert "error" not in stderr
     # check output from command 'time'
     assert "real 1." in stderr # job runs for roughly 1 second
     assert "user" in stderr

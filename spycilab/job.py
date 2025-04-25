@@ -131,6 +131,7 @@ class Job(OverridableYamlObject):
         self.internal_name = None
         self.name = name
         self.config = config
+        self.run_script = None # set by JobStore
 
         # check artifacts
         if self.config.artifacts is not None:
@@ -158,22 +159,32 @@ class Job(OverridableYamlObject):
             print("Nothing to do.")
             return 0
 
+    def get_script(self):
+        prefix = ""
+        if self.config.run_prefix:
+            prefix = self.config.run_prefix + " "
+        return f"{prefix}{self.run_script}"
+
     def to_yaml_impl(self):
         if self.internal_name is None:
             raise RuntimeError(f"Job '{self.name}' has no internal name.")
 
+        if self.run_script is None:
+            raise RuntimeError(f"Job '{self.name}' has no run script.")
+
         if self.config.stage is None:
             raise RuntimeError(f"Job '{self.name}' has no stage.")
 
+        variables = {}
+        if self.config.run_prefix:
+            variables = {"SPYCILAB_RUN_PREFIX": "true"}
+
         y = {
             "stage": self.config.stage.name,
-            "extends": ".job_base",
-            "variables": {
-                "INTERNAL_JOB_NAME": self.internal_name
-            }
+            "script": self.get_script()
         }
-        if self.config.run_prefix is not None:
-            y["variables"]["JOB_RUN_PREFIX"] = self.config.run_prefix
+        if variables:
+            y["variables"] = variables
         if self.config.rules is not None:
             y["rules"] = [r.to_yaml() for r in self.config.rules]
         if self.config.artifacts is not None:
@@ -205,13 +216,15 @@ class Job(OverridableYamlObject):
 
 
 class JobStore(TypedStore[Job]):
-    def update_jobs(self):
+    def update_jobs(self, run_script:str):
         """
         Make sure jobs know their own name
         :return:
         """
         for k, v in self.__dict__.items():
             v.internal_name = k
+            if v.run_script is None: # set default run script if not set already by user
+                v.run_script = f"{run_script} run {k}"
 
 
 def job_work(job:Job):

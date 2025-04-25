@@ -331,7 +331,8 @@ class VariableStore(TypedStore):
         "CI_COMMIT_SHA",
         "CI_COMMIT_TAG",
         "CI_JOB_NAME",
-        "CI_JOB_TOKEN"
+        "CI_JOB_TOKEN",
+        "CI_JOB_URL"
     ]
 
     def __init__(self):
@@ -356,6 +357,7 @@ class VariableStore(TypedStore):
         self.CI_COMMIT_TAG = Variable()
         self.CI_JOB_NAME = Variable()
         self.CI_JOB_TOKEN = Variable()
+        self.CI_JOB_URL = Variable()
 
     def pipeline_source_is(self, s: PipelineSource) -> Condition:
         return self.CI_PIPELINE_SOURCE.equal_to(s.value)

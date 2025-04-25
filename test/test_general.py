@@ -7,10 +7,6 @@ def test_empty_pipeline():
         jobs=JobStore(),
         stages=StageStore())
     p_yaml = p.to_yaml()
-    job_base = p_yaml.get(".job_base")
-    assert job_base is not None
-    assert type(job_base.get("script")) is str
-    assert job_base.get("script").startswith("${JOB_RUN_PREFIX} ./pipeline.py")
     v = p_yaml.get("variables")
     assert v is None
 

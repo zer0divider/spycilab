@@ -27,13 +27,14 @@ class Pipeline(OverridableYamlObject):
         else:
             self.vars = variables
 
+        self.prefix_flag_name = "--with-prefix"
         self.vars.update_variable_names()
         self.workflow = workflow
         self.jobs = jobs
-        self.jobs.update_jobs()
         self.pipeline_enabled = True
         self.config = None
         self.run_script = "./pipeline.py"
+        self.jobs.update_jobs(self.run_script)
         self.output = ".gitlab-ci.yml"
         # try loading config files in that order
         self.config_files = [".spycilab.yaml", ".spycilab.yml", ".local.spycilab.yaml", ".local.spycilab.yml"]
@@ -135,7 +136,6 @@ class Pipeline(OverridableYamlObject):
     def check_jobs(self):
         all_jobs = list(self.jobs.all())
         for ji, j in enumerate(all_jobs):
-            cmp = j.name
             for other_ji in range(ji + 1, len(all_jobs)):
                 if j.name == all_jobs[other_ji].name:
                     raise RuntimeError(
@@ -153,8 +153,7 @@ class Pipeline(OverridableYamlObject):
         # run sub command
         run_arg_parser = sub_parsers.add_parser("run", description="Run a single job from the pipeline.")
         run_arg_parser.add_argument("job", help="internal name of the job to run")
-        prefix_flag_name = "--with-prefix"
-        run_arg_parser.add_argument(prefix_flag_name, action="store_true",
+        run_arg_parser.add_argument(self.prefix_flag_name, action="store_true",
                                     help="Starts a subprocess which runs the job with its specified run prefix.")
         run_arg_parser.set_defaults(command="run")
         self.add_variable_argument(run_arg_parser)
@@ -177,6 +176,7 @@ class Pipeline(OverridableYamlObject):
             for c in self.config_files:
                 self.load_config(c)
 
+        self.jobs.update_jobs(self.run_script)
         self.check_jobs()
 
         if self.args.__dict__.get("v"):
@@ -207,12 +207,14 @@ class Pipeline(OverridableYamlObject):
                     if not j.config.run_prefix:
                         print(f"job '{self.args.job}' doesn't have any prefix, running normally ...")
                     else:
-                        full_prefix_cmd = j.config.run_prefix
-                        for a in sys.argv:
-                            if a != prefix_flag_name:
-                                full_prefix_cmd += " " + a
-                        print(f"Running with prefix: {full_prefix_cmd}")
-                        exit(subprocess.run(full_prefix_cmd, shell=True).returncode)
+                        full_run_cmd = j.get_script()
+                        print(f"Running (with prefix): {full_run_cmd}")
+                        new_env = os.environ.copy()
+                        new_env["SPYCILAB_WITH_PREFIX"] = "true"
+                        exit(subprocess.run(full_run_cmd, shell=True, env=new_env).returncode)
+                elif j.config.run_prefix and not os.environ.get("SPYCILAB_WITH_PREFIX") == "true":
+                    print(f"Warning: job '{self.args.job}' has a run prefix ({j.config.run_prefix}), consider running with flag {self.prefix_flag_name}.")
+
                 exit(self.run(j))
             case _:
                 arg_parser.print_help()
@@ -297,11 +299,6 @@ class Pipeline(OverridableYamlObject):
 
         # stages
         p["stages"] = self.stages.to_yaml()
-
-        # job base
-        p[".job_base"] = {
-            "script": "${JOB_RUN_PREFIX} " + self.run_script + " run ${INTERNAL_JOB_NAME}"
-        }
 
         # add jobs
         zero_width_space = "\u200B"
