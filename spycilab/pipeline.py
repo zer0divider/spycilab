@@ -40,9 +40,9 @@ class Pipeline(OverridableYamlObject):
         self.config_files = [".spycilab.yaml", ".spycilab.yml", ".local.spycilab.yaml", ".local.spycilab.yml"]
 
     def load_config(self, config_file):
-        import yaml  # import yaml only when needed to minimize dependencies in pipeline
         try:
             with open(config_file, "r") as f:
+                import yaml  # import yaml only when needed to minimize dependencies in pipeline
                 loader = yaml.Loader(f)
                 self.config = loader.get_data()
             if self.config is not None:
