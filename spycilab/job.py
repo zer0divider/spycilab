@@ -222,9 +222,10 @@ class JobStore(TypedStore[Job]):
         :return:
         """
         for k, v in self.__dict__.items():
-            v.internal_name = k
-            if v.run_script is None: # set default run script if not set already by user
-                v.run_script = f"{run_script} run {k}"
+            if isinstance(v, Job):
+                v.internal_name = k
+                if v.run_script is None: # set default run script if not set already by user
+                    v.run_script = f"{run_script} run {k}"
 
 
 def job_work(job:Job):

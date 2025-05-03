@@ -19,8 +19,6 @@ class StageStore(TypedStore[Stage]):
         for k, v in self.__dict__.items():
             if isinstance(v, Stage):
                 s.append(v.name)
-            else:
-                raise ValueError(f"StageStore member '{k}' is not of type Stage")
         return s
 
     def all_names(self):

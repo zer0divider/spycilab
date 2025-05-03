@@ -129,6 +129,21 @@ def test_variable_store():
     assert e.to_yaml() == {"MY_VARIABLE": "hi"}
     assert e.CI_DEFAULT_BRANCH.value is None
 
+
+def test_custom_variable_store():
+    class MyVarStore(VariableStore):
+        def __init__(self):
+            super().__init__()
+            self.var = Variable("hi")
+            self.not_var = 42
+
+    my_var_store = MyVarStore()
+    my_var_store.update_variable_names()
+    my_var_store.check_all()
+    assert my_var_store.not_var == 42
+    assert my_var_store.to_yaml()["var"] == "hi"
+
+
 def test_rule_set_comparison():
     v = Variable("test")
     v.name = "v"

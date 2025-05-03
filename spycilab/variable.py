@@ -381,11 +381,13 @@ class VariableStore(TypedStore):
         :return:
         """
         for k, v in self.__dict__.items():
-            v.name = k
+            if isinstance(v, Variable):
+                v.name = k
 
     def check_all(self):
         for v in self.__dict__.values():
-            v.check_value()
+            if isinstance(v, Variable):
+                v.check_value()
 
     def to_yaml(self):
         vs = {}
@@ -397,6 +399,4 @@ class VariableStore(TypedStore):
 
                 if k not in VariableStore.BUILTINS:
                     vs[v.name] = v.to_yaml()
-            else:
-                raise ValueError(f"VariableStore member '{k}' is not of type Variable")
         return vs
