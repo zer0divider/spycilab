@@ -26,7 +26,7 @@ def create_config(file:str, content:dict):
 
 @pytest.fixture
 def pipeline_config():
-    yield from create_config(".spycilab.yml", {"variables": {"test_variable": "FromConfig"}})
+    yield from create_config(".spycilab.yml", {"run_script": "./my_pipeline.py", "variables": {"test_variable": "FromConfig"}})
 
 @pytest.fixture
 def pipeline_local_config():

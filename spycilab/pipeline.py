@@ -34,7 +34,7 @@ class Pipeline(OverridableYamlObject):
         self.pipeline_enabled = True
         self.config = None
         self.run_script = "./pipeline.py"
-        self.jobs.update_jobs(self.run_script)
+        self.jobs.update_jobs(None)
         self.output = ".gitlab-ci.yml"
         # try loading config files in that order
         self.config_files = [".spycilab.yaml", ".spycilab.yml", ".local.spycilab.yaml", ".local.spycilab.yml"]

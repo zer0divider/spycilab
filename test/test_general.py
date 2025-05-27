@@ -24,6 +24,7 @@ def test_simple_pipeline():
     j.test_app = Job("Test My App", JobConfig(stage=s.test))
 
     p = Pipeline(jobs=j, stages=s)
+    p.jobs.update_jobs(p.run_script)
     p_yaml = p.to_yaml()
     assert p_yaml.get("Build My App") is not None
     assert p_yaml.get("Test My App") is not None
@@ -40,6 +41,7 @@ def test_preserve_order_in_stage():
     j.A = Job("A", JobConfig(stage=s.stuff))
 
     p = Pipeline(jobs=j, stages=s)
+    p.jobs.update_jobs(p.run_script)
     p_yaml = p.to_yaml()
     assert p_yaml.get("\u200BC") is not None
     assert p_yaml.get("\u200B\u200BB") is not None

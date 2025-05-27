@@ -216,7 +216,7 @@ class Job(OverridableYamlObject):
 
 
 class JobStore(TypedStore[Job]):
-    def update_jobs(self, run_script:str):
+    def update_jobs(self, run_script:str | None = None):
         """
         Make sure jobs know their own name
         :return:
@@ -224,7 +224,7 @@ class JobStore(TypedStore[Job]):
         for k, v in self.__dict__.items():
             if isinstance(v, Job):
                 v.internal_name = k
-                if v.run_script is None: # set default run script if not set already by user
+                if run_script is not None and v.run_script is None: # set default run script if not set already by user
                     v.run_script = f"{run_script} run {k}"
 
 
