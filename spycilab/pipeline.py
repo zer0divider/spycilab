@@ -161,6 +161,8 @@ class Pipeline(OverridableYamlObject):
         gen_arg_parser = sub_parsers.add_parser("generate", description="Generate GitLab-CI YAML file.")
         gen_arg_parser.add_argument("--output", required=False,
                                     help="File to write generated YAML to. This option overrides setting in configuration file.")
+        gen_arg_parser.add_argument("--run-script", default=self.run_script,
+                                    help="Script to run in generated pipeline. This option overrides setting in configuration file.")
         gen_arg_parser.set_defaults(command="generate")
         # list sub command
         list_arg_parser = sub_parsers.add_parser("list", description="List all pipeline jobs")
@@ -176,6 +178,8 @@ class Pipeline(OverridableYamlObject):
             for c in self.config_files:
                 self.load_config(c)
 
+        if self.args.command == "generate" and self.args.run_script:
+            self.run_script = self.args.run_script
         self.jobs.update_jobs(self.run_script)
         self.check_jobs()
 

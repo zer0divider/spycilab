@@ -11,10 +11,20 @@ pipeline_script = str(pipeline_dir / "pipeline.py")
 @pytest.fixture
 def pipeline_yaml():
     """
-    generates yaml and cleans up afterwards
+    generates yaml and cleans up afterward
     """
     output_file = "test_pipeline.yaml"
     subprocess.run([pipeline_script, "generate", "--output", output_file], check=True)
+    yield output_file
+    os.remove(output_file)
+
+@pytest.fixture
+def pipeline_yaml_with_custom_run_script():
+    """
+    generates yaml with a custom run script passed through cmd argument and cleans up afterward
+    """
+    output_file = "test_pipeline.yaml"
+    subprocess.run([pipeline_script, "generate", "--output", output_file, "--run-script", "./my_script.py"], check=True)
     yield output_file
     os.remove(output_file)
 
@@ -56,6 +66,12 @@ def test_generate(pipeline_yaml):
     assert p_yaml["workflow"]["rules"][0]["if"] == "($CI_COMMIT_BRANCH == 'master')"
     assert p_yaml["workflow"]["rules"][1]["if"] == "($CI_COMMIT_TAG =~ /^skip-.*$/)"
     assert p_yaml["workflow"]["rules"][1]["when"] == "never"
+
+def test_generate_with_custom_run_script(pipeline_yaml_with_custom_run_script):
+    with open(pipeline_yaml_with_custom_run_script, "r") as f:
+        p_yaml = yaml.Loader(f).get_data()
+
+    assert p_yaml["Unit Tests"]["script"] == "./my_script.py run test"
 
 @pytest.fixture
 def env_var():
