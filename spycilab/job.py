@@ -210,7 +210,7 @@ class Job(OverridableYamlObject):
         if self.config.when is not None:
             y["when"] = str(self.config.when)
         if self.config.allow_failure is not None:
-            y["allow_failure"] = str(self.config.allow_failure)
+            y["allow_failure"] = self.config.allow_failure
 
         return y
 
