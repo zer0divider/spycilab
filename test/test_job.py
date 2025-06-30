@@ -1,10 +1,10 @@
-from spycilab import Variable, Job, Stage, Rule, Artifacts, JobConfig, When
+from spycilab import Variable, Job, Stage, Rule, Artifacts, JobConfig, When, Trigger
 
 
 def test_simple_job():
     s = Stage("test stage")
     test_list = [1, 2]
-    j = Job("my job", JobConfig(stage=s, work=lambda: test_list.append(3)))
+    j = Job("my job", JobConfig(stage=s, work=lambda: test_list.append(3) or True))
     j.internal_name = "j"
     j.run_script = "run.py"
     assert j.name == "my job"
@@ -120,3 +120,59 @@ def test_extend():
     assert j.yaml_override["A"] == "A job"
     assert j.yaml_override["B"] == "B base2 job"
     assert j.yaml_override["C"] == "C base2 job"
+
+
+def test_trigger_job():
+    stage = Stage("Testing")
+    # some basic trigger job
+    j = Job("My Job", JobConfig(
+        trigger=Trigger(project="my/cool/project", branch="feature-branch", strategy_depend=True),
+        stage=stage
+    ))
+    j.internal_name = "j"
+    j.run_script = "run"
+    trigger_yaml = j.to_yaml()["trigger"]
+    assert trigger_yaml["project"] == "my/cool/project"
+    assert trigger_yaml.get("include") is None
+    assert trigger_yaml.get("script") is None
+    assert trigger_yaml["branch"] == "feature-branch"
+    assert trigger_yaml["strategy"] == "depend"
+    assert trigger_yaml["forward"]["yaml_variables"] == True
+    assert trigger_yaml["forward"]["pipeline_variables"] == False
+
+    # some basic trigger job with setting forward variables and no branch
+    j = Job("My Job 2", JobConfig(
+        trigger=Trigger(project="my/cool/project",
+                        forward_yaml_variables=False, forward_pipeline_variables=True),
+        stage=stage
+    ))
+    j.internal_name = "j"
+    j.run_script = "run"
+    trigger_yaml = j.to_yaml()["trigger"]
+    assert trigger_yaml["project"] == "my/cool/project"
+    assert trigger_yaml.get("script") is None
+    assert trigger_yaml.get("branch") is None
+    assert trigger_yaml.get("strategy") is None
+    assert trigger_yaml["forward"]["yaml_variables"] == False
+    assert trigger_yaml["forward"]["pipeline_variables"] == True
+
+    # some basic trigger job with include
+    j = Job("My Job 2", JobConfig(
+        trigger=Trigger(include="some_other_pipeline.yml"),
+        stage=stage
+    ))
+    j.internal_name = "j"
+    j.run_script = "run"
+    trigger_yaml = j.to_yaml()["trigger"]
+    assert trigger_yaml["include"] == "some_other_pipeline.yml"
+    assert trigger_yaml.get("script") is None
+    assert trigger_yaml.get("branch") is None
+    assert trigger_yaml.get("strategy") is None
+    assert trigger_yaml["forward"]["yaml_variables"] == True
+    assert trigger_yaml["forward"]["pipeline_variables"] == False
+
+    try:
+        Trigger(include="some_pipeline.yml", project="some/project")
+        assert False
+    except ValueError as e:
+        pass

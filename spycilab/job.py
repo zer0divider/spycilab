@@ -14,6 +14,43 @@ from .rule import Rule, When
 from .stage import Stage
 
 
+class Trigger(OverridableYamlObject):
+    def __init__(self, project: str | None = None, branch: str | None = None, include: str | None = None, strategy_depend=False,
+               forward_yaml_variables=True, forward_pipeline_variables=False, yaml_override: None | dict = None):
+        super().__init__(yaml_override)
+        self.project = project
+        self.branch = branch
+        self.include = include
+        self.strategy_depend = strategy_depend
+        self.forward_yaml_variables = forward_yaml_variables
+        self.forward_pipeline_variables = forward_pipeline_variables
+
+        if (self.include is None) == (self.project is None):
+            raise ValueError(f"include' XOR 'project' should be set for trigger (project={self.project}, include={self.include})")
+
+        if self.include is not None and self.branch is not None:
+            raise ValueError(f"'branch' should only be set together with 'project', not 'include' (project={self.project})")
+
+    def to_yaml_impl(self):
+        o = {
+            "forward": {
+                "yaml_variables": self.forward_yaml_variables,
+                "pipeline_variables": self.forward_pipeline_variables
+            }
+        }
+        if self.project is not None:
+            o["project"] = self.project
+            if self.branch is not None:
+                o["branch"] = self.branch
+        elif self.include is not None:
+            o["include"] = self.include
+
+        if self.strategy_depend:
+            o["strategy"] = "depend"
+
+        return o
+
+
 class JobConfig:
     """
     Configuration for a job.
@@ -31,6 +68,7 @@ class JobConfig:
                  extends: list[JobConfig] | JobConfig | None = None,
                  when: When | None = None,
                  allow_failure: bool | None = None,
+                 trigger: Trigger = None,
                  yaml_override: dict | None = None):
         """
         :param stage: in which stage should the job appear
@@ -64,7 +102,11 @@ class JobConfig:
         self.run_prefix = run_prefix
         self.when = when
         self.allow_failure = allow_failure
+        self.trigger = trigger
         self.yaml_override = yaml_override
+
+        if (self.work is not None) and (self.trigger is not None):
+            raise ValueError(f"can't have both 'work' and 'trigger'")
 
         if extends:
             extends = make_list(extends)
@@ -113,6 +155,7 @@ class JobConfig:
         j.run_prefix = self.run_prefix
         j.when = self.when
         j.allow_failure = self.allow_failure
+        j.trigger = self.trigger
         j.yaml_override = self.yaml_override.copy()
         return j
 
@@ -180,9 +223,14 @@ class Job(OverridableYamlObject):
             variables = {"SPYCILAB_RUN_PREFIX": "true"}
 
         y = {
-            "stage": self.config.stage.name,
-            "script": self.get_script()
+            "stage": self.config.stage.name
         }
+        if self.config.trigger is not None:
+            if self.config.work is not None:
+                raise ValueError(f"in job {self.internal_name}: can't have both 'work' and 'trigger'")
+            y["trigger"] = self.config.trigger.to_yaml()
+        else:
+            y["script"] = self.get_script()
         if variables:
             y["variables"] = variables
         if self.config.rules is not None:

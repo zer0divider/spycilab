@@ -80,6 +80,22 @@ Consumer:
     
 ```
 
+## Trigger Job
+A trigger job can be specified through the `trigger` keyword of the `JobConfig`. Here is an example:
+```python
+jobs.trigger_job = Job("Trigger Downstream Pipeline",
+  JobConfig(trigger=Trigger(project="path/to/other/project", strategy_depend=True), ...)
+)
+```
+generates
+```yaml
+Trigger Downstream Pipeline:
+  trigger:
+    project: "path/to/other/project"
+    strategy: depend
+  ...
+```
+
 ## Base Configurations and Inheritance (extends)
 The `extends` keyword functionally works like the native GitLab-CI yaml, however it expects a list of `JobConfig` objects and
 ultimately does not generate an `extends` keyword in the yaml.
@@ -115,7 +131,6 @@ generates
 My Job:
   tags: [ "my_tag", "other_tag" ]
 ```
-
 
 ## Run Prefix
 The `run_prefix` keyword in the `JobConfig` prepends the call to the pipeline script (`./pipeline.py`) with a custom string.

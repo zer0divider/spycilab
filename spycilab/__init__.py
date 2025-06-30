@@ -15,6 +15,7 @@ __all__ = [
     "When",
     "Stage",
     "StageStore",
+    "Trigger",
     "JobConfig",
     "Job",
     "job_work",
