@@ -37,7 +37,7 @@ jobs.my_job = Job("My Job", JobConfig(work=my_job_work))
 
 # work with lambda
 jobs.my_other_job = Job("My Job", JobConfig(
-    work=lambda: return my_func()
+    work=lambda: print("doing work ...") or True  # 'or True' needed so the work returns a value (encouraged)
 ))
 ```
 The work can also be defined after the job instantiation through the `job_work` decorator.
