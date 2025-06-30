@@ -304,21 +304,21 @@ class Pipeline(OverridableYamlObject):
         # stages
         p["stages"] = self.stages.to_yaml()
 
-        # add jobs
         zero_width_space = "\u200B"
         stage_orderings = {}
+        # Enable Job Sorting
+        #   gitlab will always sort jobs in a stage alphabetically,
+        #   so the trick is to prepend invisible characters (unicode zero-width-space character)
+        #   to adjust the sorting
         for j in self.jobs.all():
             j_stage = j.config.stage
             if j_stage and j_stage.preserve_order:
-                # gitlab will always sort jobs in a stage alphabetically,
-                # so the trick is to prepend invisible characters (unicode zero-width-space character)
-                # to adjust the sorting
                 if stage_orderings.get(j_stage) is None:
                     stage_orderings[j_stage] = zero_width_space
-                name = stage_orderings[j_stage] + j.name
+                j.name = stage_orderings[j_stage] + j.name
                 stage_orderings[j_stage] += zero_width_space
-            else:
-                name = j.name
 
-            p[name] = j.to_yaml()
+        # add jobs
+        for j in self.jobs.all():
+            p[j.name] = j.to_yaml()
         return p

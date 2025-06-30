@@ -38,7 +38,7 @@ def test_preserve_order_in_stage():
     j = JobStore()
     j.C = Job("C", JobConfig(stage=s.stuff))
     j.B = Job("B", JobConfig(stage=s.stuff))
-    j.A = Job("A", JobConfig(stage=s.stuff))
+    j.A = Job("A", JobConfig(stage=s.stuff, needs=j.B))
 
     p = Pipeline(jobs=j, stages=s)
     p.jobs.update_jobs(p.run_script)
@@ -46,6 +46,8 @@ def test_preserve_order_in_stage():
     assert p_yaml.get("\u200BC") is not None
     assert p_yaml.get("\u200B\u200BB") is not None
     assert p_yaml.get("\u200B\u200B\u200BA") is not None
+    a_needs = p_yaml.get("\u200B\u200B\u200BA")["needs"]
+    assert a_needs == [{"artifacts": False, "job": "\u200B\u200BB"}]
 
     # test whether order-preserving hack works in theory
     l = ["\u200B\u200BA", "\u200BB"]
