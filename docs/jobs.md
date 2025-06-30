@@ -50,6 +50,43 @@ def my_job_work():
     return True
 ```
 
+### Parameterization
+If you want to create multiple jobs using the same work function (but with different arguments) you have to be careful as python likes to
+use references for the parameters accessed in a lambda. The following example shows how NOT to do it:
+```python
+def show_value(value:int):
+    print("The value is", value)
+    return True
+    
+for i in range(3):
+    jobs.add(f"show_value_{i}", Job(f"Show Value {i}", JobConfig(
+        work=lambda: show_value(i)  # a reference to 'i' is stored in the lambda,
+                                    # not the current value of 'i'
+        ...
+    )))
+```
+No matter which job you run (`show_value_0`, `show_value_1` or `show_value_2`), they will all print `The value is 2`.
+This is because the last value `i` was set to is `2` when the work functions are called (`i` is used as reference in the lambda).
+
+To fix this, put the job creation in a function with a parameter to pass onto the work function, like so: 
+```python
+def show_value(value:int):
+    print("The value is", value)
+    return True
+
+def create_show_job(value:int):
+    jobs.add(f"show_value_{value}", Job(f"Show Value {value}", JobConfig(
+        work=lambda: show_value(value)  # 'value' is still used as reference, however,
+                                        # each invocation of 'create_show_job()' has it's own 'value' variable
+                                        # each assigned to a different value
+        ...
+    )))
+
+for i in range(2):
+    create_show_job(i)
+```
+Now each job prints its corresponding value correctly (e.g. `show_value_1` prints `The value is 1`).
+
 ## Needs
 The `needs` keyword in *spycilab* is a little bit different from the native GitLab-CI yaml `needs` as it expects a list of artifacts or jobs.
 The actual job that produces the artifact is automatically referenced when artifacts are specified.
