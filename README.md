@@ -1,4 +1,4 @@
-# spycilab
+# Spycilab - Creating GitLab Pipelines with Python
 No, this is not a typo. The *Simple Python CI Lab* (spycilab) is a GitLab-CI YAML generator that lets you specify your CI pipeline through Python.
 Here is a small example `pipeline.py`:
 ```python
