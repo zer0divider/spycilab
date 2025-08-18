@@ -40,6 +40,7 @@ Test My App:
   stage: Testing Stuff
   script: ./pipeline.py run test_app
 ```
+Don't be confused, the `pipeline.py` is the generator as well as the executor for the jobs. Everything is in one place.
 
 ## Basic Commandline Arguments
 - ```./pipeline.py generate``` to generate `.gitlab-ci.yml`
@@ -54,6 +55,7 @@ See [docs](./docs):
 - [Variables](./docs/variables.md)
 - [Rules & Conditions](./docs/rules.md)
 - [Configuration File](./docs/config.md)
+- [Best Practices](./docs/best_practices.md)
 
 ## Install
 ### Install locally

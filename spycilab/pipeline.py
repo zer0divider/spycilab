@@ -243,6 +243,8 @@ class Pipeline(OverridableYamlObject):
         for s in self.stages.all():
             jobs_by_stage[s.name] = []
         for j in self.jobs.all():
+            if not j.config.stage:
+                raise RuntimeError(f"Job {j.internal_name} has no stage.")
             jobs_by_stage[j.config.stage.name].append(j)
         for s in self.stages.all():
             jbs = jobs_by_stage[s.name].copy()
