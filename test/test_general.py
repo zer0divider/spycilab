@@ -34,11 +34,13 @@ def test_simple_pipeline():
 def test_preserve_order_in_stage():
     s = StageStore()
     s.stuff = Stage("stuff", preserve_order=True)
+    s.other_stuff = Stage("other_stuff")
 
     j = JobStore()
     j.C = Job("C", JobConfig(stage=s.stuff))
     j.B = Job("B", JobConfig(stage=s.stuff))
-    j.A = Job("A", JobConfig(stage=s.stuff, needs=j.B))
+    j.A = Job("A", JobConfig(stage=s.stuff))
+    j.next_job = Job("Next", JobConfig(stage=s.other_stuff, needs=j.B)) # check whether referencing job works
 
     p = Pipeline(jobs=j, stages=s)
     p.jobs.update_jobs(p.run_script)
@@ -46,8 +48,7 @@ def test_preserve_order_in_stage():
     assert p_yaml.get("\u200BC") is not None
     assert p_yaml.get("\u200B\u200BB") is not None
     assert p_yaml.get("\u200B\u200B\u200BA") is not None
-    a_needs = p_yaml.get("\u200B\u200B\u200BA")["needs"]
-    assert a_needs == [{"artifacts": False, "job": "\u200B\u200BB"}]
+    assert p_yaml.get("Next")["needs"][0]["job"] == "\u200B\u200BB"
 
     # test whether order-preserving hack works in theory
     l = ["\u200B\u200BA", "\u200BB"]
